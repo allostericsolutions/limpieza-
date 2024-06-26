@@ -20,7 +20,7 @@ def main():
     st.title("Limpieza de Datos CSV")
 
     # Mostrar la imagen de la empresa
-    st.image("https://i.imgur.com/Mns8Z85.png", caption='Allosteric Solutions', use_column_width=True)
+    st.image("https://i.imgur.com/LzPcPIk.png", caption='Allosteric Solutions', use_column_width=True)
 
     # Compartir la página empresarial y el correo
     st.markdown("[Visita nuestra página web](https://www.allostericsolutions.com)")
