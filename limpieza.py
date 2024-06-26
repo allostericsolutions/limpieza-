@@ -19,6 +19,13 @@ def limpiar_dato(dato):
 def main():
     st.title("Limpieza de Datos CSV")
 
+    # Mostrar la imagen de la empresa
+    st.image("https://i.imgur.com/Mns8Z85.png", caption='Allosteric Solutions', use_column_width=True)
+
+    # Compartir la página empresarial y el correo
+    st.markdown("[Visita nuestra página web](https://www.allostericsolutions.com)")
+    st.markdown("Contacto: [franciscocuriel@allostericsolutions.com](mailto:franciscocuriel@allostericsolutions.com)")
+
     uploaded_file = st.file_uploader("Sube tu archivo CSV", type=["csv"])
 
     if uploaded_file is not None:
