@@ -89,7 +89,8 @@ def main():
         formato_salida = st.selectbox("Select output format", ["Excel", "PDF"])
 
         if formato_salida == "Excel":
-            cleaned_file = df.to_excel(index=False)
+            # Guarda el DataFrame en un archivo Excel
+            cleaned_file = df.to_excel('cleaned_numbers.xlsx', index=False)
             st.download_button(
                 label="Download Cleaned Excel",
                 data=cleaned_file,
