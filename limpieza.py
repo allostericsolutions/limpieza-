@@ -20,16 +20,28 @@ def main():
     st.title("Limpieza de Datos CSV")
 
     # Mostrar la imagen de la empresa con tamaño ajustado
-    st.image("https://i.imgur.com/LzPcPIk.png", caption='Allosteric Solutions', use_column_width=True, width=300)
+    st.image("https://i.imgur.com/LzPcPIk.png", caption='Allosteric Solutions', width=100)
 
     # Compartir la página empresarial y el correo
     st.markdown("[Visita nuestra página web](https://www.allostericsolutions.com)")
     st.markdown("Contacto: [franciscocuriel@allostericsolutions.com](mailto:franciscocuriel@allostericsolutions.com)")
 
-    # Leer y mostrar el contenido del README.md
-    with open("README.md", "r") as f:
-        readme_content = f.read()
-    st.markdown(readme_content)
+    # Sección desplegable para "Features"
+    with st.expander("Features"):
+        st.markdown("""
+        1. Removes duplicate numbers
+        2. Filters out numbers with more or less than 10 digits
+        3. Eliminates non-numeric characters
+        4. **Makes your phone number list sparkle**: Because who doesn't love a clean and shiny phone number list?
+        """)
+
+    # Sección desplegable para "How to Use"
+    with st.expander("How to Use"):
+        st.markdown("""
+        1. **Upload your CSV file**: The file should contain phone numbers that need to be cleaned.
+        2. **Download the cleaned CSV file**: After processing, download the cleaned file with valid phone numbers.
+        3. **Enjoy the Magic**: Sit back and relax while our app works its magic. It's like having a personal assistant who loves cleaning up phone numbers!
+        """)
 
     uploaded_file = st.file_uploader("Sube tu archivo CSV", type=["csv"])
 
