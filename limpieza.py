@@ -71,22 +71,28 @@ def main():
     uploaded_file = st.file_uploader("Upload your CSV file", type=["csv", "xls", "xlsx", "txt"])
 
     if uploaded_file is not None:
+        # Leer el archivo en una lista de strings
+        data = []
         if uploaded_file.name.endswith(".csv"):
-            data = pd.read_csv(uploaded_file, header=None)
+            for line in uploaded_file:
+                data.append(line.decode("utf-8").strip())
         elif uploaded_file.name.endswith((".xls", ".xlsx")):
-            data = pd.read_excel(uploaded_file, header=None)
+            data = pd.read_excel(uploaded_file, header=None).values.flatten().astype(str).tolist()
         elif uploaded_file.name.endswith(".txt"):
-            data = pd.read_csv(uploaded_file, header=None, sep="\n")
+            for line in uploaded_file:
+                data.append(line.decode("utf-8").strip())
         else:
             st.error("Invalid file format. Please upload a CSV, Excel, or Text file.")
             return
 
         output = []
-        for col in data.columns:
-            data[col] = data[col].apply(lambda x: limpiar_dato(str(x)))
-            for value in data[col].to_list():
-                if value is not None and value not in output:
-                    output.append(value)
+        for line in data:
+            # Separar números por coma o espacio
+            numbers = re.split(r'[,\s]+', line)
+            for number in numbers:
+                cleaned_number = limpiar_dato(number)
+                if cleaned_number is not None and cleaned_number not in output:
+                    output.append(cleaned_number)
 
         df = pd.DataFrame()
         df["cleaned_numbers"] = output
