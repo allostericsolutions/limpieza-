@@ -20,7 +20,7 @@ def main():
     st.title("CSV Data Cleaning")
 
     # Mostrar la imagen de la empresa con tamaño ajustado
-    st.image("https://i.imgur.com/LzPcPIk.png", caption='Allosteric Solutions', width=100)
+    st.image("https://i.imgur.com/LzPcPIk.png", caption='Allosteric Solutions', width=200)
 
     # Compartir la página empresarial y el correo
     st.markdown("[Visit our website](https://www.allostericsolutions.com)")
