@@ -2,19 +2,39 @@ import streamlit as st
 import pandas as pd
 import re
 from io import StringIO
+import os
+from fpdf import FPDF
+import tempfile
 
 def limpiar_dato(dato):
     try:
         # Eliminar caracteres no numéricos
         dato_limpio = re.sub(r'\D', '', dato)
 
-        # Verificar si el dato limpio tiene 10 dígitos
+        # Verificar si el dato limpio tiene exactamente 10 dígitos
         if len(dato_limpio) == 10:
             return dato_limpio
         else:
             return None
     except:
         return None
+
+def generar_pdf(dataframe):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+
+    # Encabezado
+    pdf.cell(200, 10, txt="Cleaned Phone Numbers", ln=True, align='C')
+
+    # Datos
+    for index, row in dataframe.iterrows():
+        pdf.cell(200, 10, txt=row['cleaned_numbers'], ln=True, align='C')
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmpfile:
+        pdf.output(tmpfile.name)
+
+    return tmpfile.name
 
 def main():
     st.title("CSV Data Cleaning")
@@ -43,19 +63,20 @@ def main():
         3. **Enjoy the Magic**: Sit back and relax while our app works its magic. It's like having a personal assistant who loves cleaning up phone numbers!
         """)
 
-    uploaded_file = st.file_uploader("Upload your CSV file", type=["csv"])
+    uploaded_file = st.file_uploader("Upload your CSV file", type=["csv", "xls", "xlsx"])
 
     if uploaded_file is not None:
-        # Leer el archivo CSV cargado
-        data = pd.read_csv(uploaded_file, header=None)
+        if uploaded_file.name.endswith(".csv"):
+            data = pd.read_csv(uploaded_file, header=None)
+        else:
+            data = pd.read_excel(uploaded_file, header=None)
 
         output = []
         for col in data.columns:
-            data[col] = data[col].apply(lambda x: limpiar_dato(x))
+            data[col] = data[col].apply(lambda x: limpiar_dato(str(x)))
             for value in data[col].to_list():
-                if value not in output:
-                    if value is not None:
-                        output.append(value)
+                if value is not None and value not in output:
+                    output.append(value)
 
         df = pd.DataFrame()
         df["cleaned_numbers"] = output
@@ -64,17 +85,27 @@ def main():
         st.write("Cleaned Data:")
         st.dataframe(df)
 
-        # Descargar el archivo CSV limpio
-        csv = df.to_csv(index=False)
-        st.download_button(
-            label="Download Cleaned CSV",
-            data=csv,
-            file_name='cleaned_numbers.csv',
-            mime='text/csv',
-        )
+        # Opción de formato de salida (Excel o PDF)
+        formato_salida = st.selectbox("Select output format", ["Excel", "PDF"])
 
-if __name__ == "__main__":
-    main()
+        if formato_salida == "Excel":
+            cleaned_file = df.to_excel(index=False)
+            st.download_button(
+                label="Download Cleaned Excel",
+                data=cleaned_file,
+                file_name='cleaned_numbers.xlsx',
+                mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            )
+        elif formato_salida == "PDF":
+            pdf_file_path = generar_pdf(df)
+            with open(pdf_file_path, "rb") as pdf_file:
+                st.download_button(
+                    label="Download Cleaned PDF",
+                    data=pdf_file,
+                    file_name='cleaned_numbers.pdf',
+                    mime='application/pdf',
+                )
+            os.remove(pdf_file_path)
 
 if __name__ == "__main__":
     main()
