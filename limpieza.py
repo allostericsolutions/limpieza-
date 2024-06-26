@@ -37,7 +37,7 @@ def generar_pdf(dataframe):
     return tmpfile.name
 
 def main():
-    st.title("CSV Data Cleaning")
+    st.title("Dr. Cleaner")
 
     # Mostrar la imagen de la empresa con tamaño ajustado
     st.image("https://i.imgur.com/LzPcPIk.png", caption='Allosteric Solutions', width=200)
