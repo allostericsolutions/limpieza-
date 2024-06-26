@@ -17,7 +17,7 @@ def limpiar_dato(dato):
         return None
 
 def main():
-    st.title("Limpieza de Datos CSV")
+    st.title("CSV Data Cleaning,Mr. Magic")
 
     # Mostrar la imagen de la empresa con tamaño ajustado
     st.image("https://i.imgur.com/LzPcPIk.png", caption='Allosteric Solutions', width=300)
