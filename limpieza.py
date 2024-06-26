@@ -37,7 +37,7 @@ def generar_pdf(dataframe):
     return tmpfile.name
 
 def main():
-    st.title("The Phone Number Doctor")
+    st.title("CSV Data Cleaning")
 
     # Mostrar la imagen de la empresa con tamaño ajustado
     st.image("https://i.imgur.com/LzPcPIk.png", caption='Allosteric Solutions', width=200)
@@ -58,18 +58,27 @@ def main():
     # Sección desplegable para "How to Use"
     with st.expander("How to Use"):
         st.markdown("""
-        1. **Upload your CSV file**: The file should contain phone numbers that need to be cleaned.
-        2. **Download the cleaned CSV file**: After processing, download the cleaned file with valid phone numbers.
-        3. **Enjoy the Magic**: Sit back and relax while our app works its magic. It's like having a personal assistant who loves cleaning up phone numbers!
+        1. **Upload your file:**  You can upload your phone number list in the following formats:
+            * **CSV (.csv)**
+            * **Excel (.xls, .xlsx)**
+            * **Text (.txt)** (Make sure each phone number is on a separate line)
+        2. **Download the cleaned file:**  After processing, you can download your cleaned phone number list in either:
+            * **Excel (.xlsx)**
+            * **PDF (.pdf)**
         """)
 
-    uploaded_file = st.file_uploader("Upload your CSV file", type=["csv", "xls", "xlsx"])
+    uploaded_file = st.file_uploader("Upload your CSV file", type=["csv", "xls", "xlsx", "txt"])
 
     if uploaded_file is not None:
         if uploaded_file.name.endswith(".csv"):
             data = pd.read_csv(uploaded_file, header=None)
-        else:
+        elif uploaded_file.name.endswith((".xls", ".xlsx")):
             data = pd.read_excel(uploaded_file, header=None)
+        elif uploaded_file.name.endswith(".txt"):
+            data = pd.read_csv(uploaded_file, header=None, sep="\n")
+        else:
+            st.error("Invalid file format. Please upload a CSV, Excel, or Text file.")
+            return
 
         output = []
         for col in data.columns:
@@ -115,3 +124,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
