@@ -20,7 +20,7 @@ def main():
     st.title("Asistente números telefónicos")
 
     # Mostrar la imagen de la empresa con tamaño ajustado
-    st.image("https://i.imgur.com/LzPcPIk.png", caption='Allosteric Solutions', use_column_width=True, width=300)
+    st.image("https://i.imgur.com/LzPcPIk.png", caption='Allosteric Solutions', use_column_width=True, width=200)
 
     # Compartir la página empresarial y el correo
     st.markdown("[Visita nuestra página web](https://www.allostericsolutions.com)")
