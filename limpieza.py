@@ -65,6 +65,7 @@ def main():
         2. **Download the cleaned file:**  After processing, you can download your cleaned phone number list in either:
             * **Excel (.xlsx)**
             * **PDF (.pdf)**
+        3. **Enjoy the Magic**: Sit back and relax while our app works its magic. It's like having a personal assistant who loves cleaning up phone numbers!
         """)
 
     uploaded_file = st.file_uploader("Upload your CSV file", type=["csv", "xls", "xlsx", "txt"])
@@ -124,4 +125,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
