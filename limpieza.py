@@ -20,11 +20,11 @@ def main():
     st.title("CSV Data Cleaning")
 
     # Mostrar la imagen de la empresa con tamaño ajustado
-    st.image("https://i.imgur.com/LzPcPIk.png", caption='Allosteric Solutions', width=300)
+    st.image("https://i.imgur.com/LzPcPIk.png", caption='Allosteric Solutions', width=100)
 
     # Compartir la página empresarial y el correo
-    st.markdown("[Visita nuestra página web](https://www.allostericsolutions.com)")
-    st.markdown("Contacto: [franciscocuriel@allostericsolutions.com](mailto:franciscocuriel@allostericsolutions.com)")
+    st.markdown("[Visit our website](https://www.allostericsolutions.com)")
+    st.markdown("Contact: [franciscocuriel@allostericsolutions.com](mailto:franciscocuriel@allostericsolutions.com)")
 
     # Sección desplegable para "Features"
     with st.expander("Features"):
@@ -43,7 +43,7 @@ def main():
         3. **Enjoy the Magic**: Sit back and relax while our app works its magic. It's like having a personal assistant who loves cleaning up phone numbers!
         """)
 
-    uploaded_file = st.file_uploader("Sube tu archivo CSV", type=["csv"])
+    uploaded_file = st.file_uploader("Upload your CSV file", type=["csv"])
 
     if uploaded_file is not None:
         # Leer el archivo CSV cargado
@@ -58,18 +58,18 @@ def main():
                         output.append(value)
 
         df = pd.DataFrame()
-        df["limpios"] = output
+        df["cleaned_numbers"] = output
 
         # Mostrar el DataFrame en la aplicación Streamlit
-        st.write("Datos Limpiados:")
+        st.write("Cleaned Data:")
         st.dataframe(df)
 
         # Descargar el archivo CSV limpio
         csv = df.to_csv(index=False)
         st.download_button(
-            label="Descargar CSV limpio",
+            label="Download Cleaned CSV",
             data=csv,
-            file_name='limpios.csv',
+            file_name='cleaned_numbers.csv',
             mime='text/csv',
         )
 
