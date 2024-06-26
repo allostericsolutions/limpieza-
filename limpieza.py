@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import re
-from io import StringIO
+from io import StringIO, BytesIO
 import os
 from fpdf import FPDF
 import tempfile
@@ -89,14 +89,19 @@ def main():
         formato_salida = st.selectbox("Select output format", ["Excel", "PDF"])
 
         if formato_salida == "Excel":
-            # Guarda el DataFrame en un archivo Excel
-            cleaned_file = df.to_excel('cleaned_numbers.xlsx', index=False)
+            # Guarda el DataFrame en un objeto en memoria como un archivo temporal
+            buffer = BytesIO()
+            df.to_excel(buffer, index=False)
+            buffer.seek(0)  # Vuelve al principio del buffer
+
+            # Descarga el archivo Excel como un byte string
             st.download_button(
                 label="Download Cleaned Excel",
-                data=cleaned_file,
+                data=buffer.getvalue(),
                 file_name='cleaned_numbers.xlsx',
                 mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             )
+
         elif formato_salida == "PDF":
             pdf_file_path = generar_pdf(df)
             with open(pdf_file_path, "rb") as pdf_file:
