@@ -71,46 +71,31 @@ def main():
     uploaded_file = st.file_uploader("Upload your file", type=["csv", "xls", "xlsx", "txt"])
 
     if uploaded_file is not None:
-        # Usar un set para evitar duplicados
-        output = set()
-
-        # Procesar archivo CSV
+        # Leer el archivo en una lista de strings
+        data = []
         if uploaded_file.name.endswith(".csv"):
-            chunk_size = 10000
-            for chunk in pd.read_csv(uploaded_file, header=None, chunksize=chunk_size):
-                for line in chunk.iloc[:, 0]:
-                    numbers = re.split(r'[,\s]+', str(line))
-                    for number in numbers:
-                        cleaned_number = limpiar_dato(number)
-                        if cleaned_number is not None:
-                            output.add(cleaned_number)
-
-        # Procesar archivo Excel
+            for line in uploaded_file:
+                data.append(line.decode("utf-8").strip())
         elif uploaded_file.name.endswith((".xls", ".xlsx")):
-            chunk_size = 10000
-            for chunk in pd.read_excel(uploaded_file, header=None, chunksize=chunk_size):
-                for line in chunk.iloc[:, 0]:
-                    numbers = re.split(r'[,\s]+', str(line))
-                    for number in numbers:
-                        cleaned_number = limpiar_dato(number)
-                        if cleaned_number is not None:
-                            output.add(cleaned_number)
-
-        # Procesar archivo de texto
+            data = pd.read_excel(uploaded_file, header=None).values.flatten().astype(str).tolist()
         elif uploaded_file.name.endswith(".txt"):
             for line in uploaded_file:
-                line = line.decode("utf-8").strip()
-                numbers = re.split(r'[,\s]+', line)
-                for number in numbers:
-                    cleaned_number = limpiar_dato(number)
-                    if cleaned_number is not None:
-                        output.add(cleaned_number)
-
+                data.append(line.decode("utf-8").strip())
         else:
             st.error("Invalid file format. Please upload a CSV, Excel, or Text file.")
             return
 
-        df = pd.DataFrame(list(output), columns=["cleaned_numbers"])
+        output = []
+        for line in data:
+            # Separar números por coma o espacio
+            numbers = re.split(r'[,\s]+', line)
+            for number in numbers:
+                cleaned_number = limpiar_dato(number)
+                if cleaned_number is not None and cleaned_number not in output:
+                    output.append(cleaned_number)
+
+        df = pd.DataFrame()
+        df["cleaned_numbers"] = output
 
         # Mostrar el DataFrame en la aplicación Streamlit
         st.write("Cleaned Data:")
