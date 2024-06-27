@@ -68,7 +68,7 @@ def main():
         3. **Enjoy the Magic**: Sit back and relax while our app works its magic. It's like having a personal assistant who loves cleaning up phone numbers!
         """)
 
-    uploaded_file = st.file_uploader("Upload your CSV file", type=["csv", "xls", "xlsx", "txt"])
+    uploaded_file = st.file_uploader("Upload your file", type=["csv", "xls", "xlsx", "txt"])
 
     if uploaded_file is not None:
         # Leer el archivo en una lista de strings
