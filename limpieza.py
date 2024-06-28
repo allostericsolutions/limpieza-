@@ -5,6 +5,7 @@ from io import BytesIO
 import os
 from fpdf import FPDF
 import tempfile
+import numpy as np  # Importa NumPy con el alias 'np'
 
 def limpiar_y_validar(dato):
     # Eliminar caracteres no numéricos
