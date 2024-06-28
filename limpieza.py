@@ -78,7 +78,7 @@ def main():
         3. **Enjoy the Magic**: Sit back and relax while our app works its magic. It's like having a personal assistant who loves cleaning up phone numbers!
         """)
 
-    uploaded_file = st.file_uploader("Upload your file", type=["csv", "xls", "xlsx", "txt"])
+    uploaded_file = st.file_uploader("Drop Your Junk Here", type=["csv", "xls", "xlsx", "txt"])
 
     if uploaded_file is not None:
         data = []
@@ -162,7 +162,7 @@ def main():
         st.write("Cleaned Data:")
         st.dataframe(df)
 
-        formato_salida = st.selectbox("Select output format", ["Excel", "PDF"])
+        formato_salida = st.selectbox("Choose Your Fancy Output!", ["Excel", "PDF"])
 
         if formato_salida == "Excel":
             buffer = BytesIO()
@@ -170,7 +170,7 @@ def main():
             buffer.seek(0)
 
             st.download_button(
-                label="Download Cleaned Excel",
+                label="Download Cleaned,
                 data=buffer.getvalue(),
                 file_name='cleaned_numbers.xlsx',
                 mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -217,7 +217,7 @@ def main():
 
             with open(reporte_file, "rb") as report_file:
                 st.download_button(
-                    label="Download Report (Excel)",
+                    label="Retrieve Your Pristine Mess Here!",
                     data=report_file,
                     file_name='report.xlsx',
                     mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
