@@ -1,37 +1,30 @@
 import streamlit as st
 import pandas as pd
 import re
-from io import StringIO, BytesIO
+from io import BytesIO
 import os
 from fpdf import FPDF
 import tempfile
 
-def limpiar_dato(dato):
-    try:
-        # Eliminar caracteres no numéricos
-        dato_limpio = re.sub(r'\D', '', dato)
+def limpiar_y_validar(dato):
+    # Eliminar caracteres no numéricos
+    dato_limpio = re.sub(r'\D', '', dato).strip()
 
-        # Verificar si el dato limpio tiene exactamente 10 dígitos
-        if len(dato_limpio) == 10:
-            return dato_limpio
-        else:
-            return None
-    except:
-        return None
+    # Verificar si el dato limpio tiene exactamente 10 dígitos
+    if len(dato_limpio) == 10:
+        return dato_limpio
+    return None
 
 def generar_pdf_reporte(dataframe, info_df):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
-
-    # Encabezado
+    
     pdf.cell(200, 10, txt="Phone Number Cleanup Report", ln=True, align='C')
 
-    # Datos del reporte
     for i, (desc, count) in dataframe.iterrows():
         pdf.cell(200, 10, txt=f"{desc}: {count}", ln=True, align='L')
     
-    # Información adicional del análisis
     pdf.add_page()
     pdf.cell(200, 10, txt="Analysis Information", ln=True, align='C')
     for info in info_df['Analysis']:
@@ -47,10 +40,8 @@ def generar_pdf(dataframe):
     pdf.add_page()
     pdf.set_font("Arial", size=12)
 
-    # Encabezado
     pdf.cell(200, 10, txt="Cleaned Phone Numbers", ln=True, align='C')
 
-    # Datos
     for index, row in dataframe.iterrows():
         pdf.cell(200, 10, txt=row['cleaned_numbers'], ln=True, align='C')
 
@@ -62,14 +53,11 @@ def generar_pdf(dataframe):
 def main():
     st.title("Dr. Cleaner")
 
-    # Mostrar la imagen de la empresa con tamaño ajustado
     st.image("https://i.imgur.com/LzPcPIk.png", caption='Allosteric Solutions', width=200)
 
-    # Compartir la página empresarial y el correo
     st.markdown("[Visit our website](https://www.allostericsolutions.com)")
     st.markdown("Contact: [franciscocuriel@allostericsolutions.com](mailto:franciscocuriel@allostericsolutions.com)")
 
-    # Sección desplegable para "Features"
     with st.expander("Features"):
         st.markdown("""
         1. Removes duplicate numbers
@@ -78,7 +66,6 @@ def main():
         4. **Makes your phone number list sparkle**: Because who doesn't love a clean and shiny phone number list?
         """)
 
-    # Sección desplegable para "How to Use"
     with st.expander("How to Use"):
         st.markdown("""
         1. **Upload your file:**  You can upload your phone number list in the following formats:
@@ -94,61 +81,99 @@ def main():
     uploaded_file = st.file_uploader("Upload your file", type=["csv", "xls", "xlsx", "txt"])
 
     if uploaded_file is not None:
-        # Leer el archivo en una lista de strings
         data = []
-        if uploaded_file.name.endswith(".csv"):
-            for line in uploaded_file:
-                data.append(line.decode("utf-8").strip())
-        elif uploaded_file.name.endswith((".xls", ".xlsx")):
-            data = pd.read_excel(uploaded_file, header=None).values.flatten().astype(str).tolist()
-        elif uploaded_file.name.endswith(".txt"):
-            for line in uploaded_file:
-                data.append(line.decode("utf-8").strip())
+        file_extension = uploaded_file.name.split('.')[-1]
+
+        # Leer archivos en Chunks y contar el número total de líneas para la barra de progreso
+        if file_extension in ["csv", "txt"]:
+            # Reiniciar el puntero del archivo después de contar las líneas
+            uploaded_file.seek(0)
+
+        chunk_size = 10000  # Número de líneas a procesar por chunk
+        total_numbers = 0
+        invalid_numbers_less_than_10 = 0
+        invalid_numbers_greater_than_10 = 0
+        output = set()
+
+        if file_extension == "csv":
+            reader = pd.read_csv(uploaded_file, chunksize=chunk_size, header=None)
+            for chunk_num, chunk in enumerate(reader):
+                total_numbers += chunk.size
+                fondos_planos = chunk.values.flatten().astype(str).tolist()
+                for line in fondos_planos:
+                    numbers = re.split(r'[,\s]+', line)
+                    for number in numbers:
+                        cleaned_number = limpiar_y_validar(number)
+                        if cleaned_number is not None:
+                            output.add(cleaned_number)
+                        else:
+                            if len(re.sub(r'\D', '', number)) < 10:
+                                invalid_numbers_less_than_10 += 1
+                            elif len(re.sub(r'\D', '', number)) > 10:
+                                invalid_numbers_greater_than_10 += 1
+                st.progress((chunk_num + 1) / (chunk_num + 2))
+
+        elif file_extension in ["xls", "xlsx"]:
+            reader = pd.read_excel(uploaded_file, None)  # Leer todas las hojas
+            for sheet_name, sheet in reader.items():
+                num_chunks = max(1, len(sheet) // chunk_size)
+                for chunk_num, chunk in enumerate(np.array_split(sheet, num_chunks)):
+                    total_numbers += chunk.size
+                    fondos_planos = chunk.values.flatten().astype(str).tolist()
+                    for line in fondos_planos:
+                        numbers = re.split(r'[,\s]+', line)
+                        for number in numbers:
+                            cleaned_number = limpiar_y_validar(number)
+                            if cleaned_number is not None:
+                                output.add(cleaned_number)
+                            else:
+                                if len(re.sub(r'\D', '', number)) < 10:
+                                    invalid_numbers_less_than_10 += 1
+                                elif len(re.sub(r'\D', '', number)) > 10:
+                                    invalid_numbers_greater_than_10 += 1
+                    st.progress((chunk_num + 1) / (chunk_num + 2))
+
+        elif file_extension == "txt":
+            for i, line in enumerate(uploaded_file):
+                cleaned_line = line.decode("utf-8").strip()
+                numbers = re.split(r'[,\s]+', cleaned_line)
+                for number in numbers:
+                    total_numbers += 1  # Contar todos los números, incluyendo los inválidos
+                    cleaned_number = limpiar_y_validar(number)
+                    if cleaned_number:
+                        output.add(cleaned_number)
+                    else:
+                        if len(re.sub(r'\D', '', number)) < 10:
+                            invalid_numbers_less_than_10 += 1
+                        elif len(re.sub(r'\D', '', number)) > 10:
+                            invalid_numbers_greater_than_10 += 1
+                if (i + 1) % chunk_size == 0:
+                    st.progress((i + 1) / ((i + 1) // chunk_size + 1))
+
+            st.progress(1.0)  # Completar la barra de progreso al final
+
         else:
             st.error("Invalid file format. Please upload a CSV, Excel, or Text file.")
             return
 
-        output = set()  # Utilizar un conjunto para evitar duplicados automáticamente
-        total_numbers = 0
-        invalid_numbers_less_than_10 = 0
-        invalid_numbers_greater_than_10 = 0
-
-        for line in data:
-            # Separar números por coma o espacio
-            numbers = re.split(r'[,\s]+', line)
-            total_numbers += len(numbers)
-            for number in numbers:
-                cleaned_number = limpiar_dato(number)
-                if cleaned_number is not None:
-                    output.add(cleaned_number)
-                else:
-                    if len(re.sub(r'\D', '', number)) < 10:
-                        invalid_numbers_less_than_10 += 1
-                    elif len(re.sub(r'\D', '', number)) > 10:
-                        invalid_numbers_greater_than_10 += 1
-
         df = pd.DataFrame()
         df["cleaned_numbers"] = list(output)
 
-        # Mostrar el DataFrame en la aplicación Streamlit
         st.write("Cleaned Data:")
         st.dataframe(df)
 
-        # Opción de formato de salida (Excel o PDF)
         formato_salida = st.selectbox("Select output format", ["Excel", "PDF"])
 
         if formato_salida == "Excel":
-            # Guarda el DataFrame en un objeto en memoria como un archivo temporal
             buffer = BytesIO()
             df.to_excel(buffer, index=False)
-            buffer.seek(0)  # Vuelve al principio del buffer
+            buffer.seek(0)
 
-            # Descarga el archivo Excel como un byte string
             st.download_button(
                 label="Download Cleaned Excel",
                 data=buffer.getvalue(),
                 file_name='cleaned_numbers.xlsx',
-                mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             )
 
         elif formato_salida == "PDF":
@@ -158,40 +183,33 @@ def main():
                     label="Download Cleaned PDF",
                     data=pdf_file,
                     file_name='cleaned_numbers.pdf',
-                    mime='application/pdf',
+                    mime='application/pdf'
                 )
             os.remove(pdf_file_path)
 
-        # Generar reporte
-        n_total = total_numbers
         n_validos = len(output)
-        n_duplicados_eliminados = n_total - (n_validos + invalid_numbers_less_than_10 + invalid_numbers_greater_than_10)
+        n_duplicados_eliminados = total_numbers - (n_validos + invalid_numbers_less_than_10 + invalid_numbers_greater_than_10)
 
         reporte = {
-            'Total numbers found in the file': n_total,
+            'Total numbers found in the file': total_numbers,
             'Total valid numbers processed (exactly 10 digits)': n_validos,
             'Total disqualified numbers (less than 10 digits)': invalid_numbers_less_than_10,
             'Total disqualified numbers (more than 10 digits)': invalid_numbers_greater_than_10,
             'Total duplicate numbers removed': n_duplicados_eliminados
         }
 
-        # Crear DataFrame para reporte
         reporte_df = pd.DataFrame(list(reporte.items()), columns=['Description', 'Count'])
 
-        # Añadir información adicional del análisis
         info_df = pd.DataFrame({
             'Analysis': ['Analyzed by Allosteric Solutions', 'www.allostericsolutions.com', 'franciscocuriel@allostericsolutions.com']
         })
 
-        # Mostrar el resumen del reporte en la interfaz de Streamlit
         st.write("Report Summary:")
         st.dataframe(reporte_df)
 
-        # Permitir al usuario seleccionar el formato del reporte (Excel o PDF)
         formato_reporte = st.selectbox("Select report format", ["Excel", "PDF"])
 
         if formato_reporte == "Excel":
-            # Guardar el archivo de reporte en Excel
             reporte_file = 'report.xlsx'
             with pd.ExcelWriter(reporte_file) as writer:
                 reporte_df.to_excel(writer, sheet_name='Summary', index=False)
@@ -204,18 +222,17 @@ def main():
                     file_name='report.xlsx',
                     mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                 )
-        
+
         elif formato_reporte == "PDF":
-            # Generar el archivo de reporte en PDF
-            pdf_file_path = generar_pdf_reporte(reporte_df, info_df)
-            with open(pdf_file_path, "rb") as report_pdf_file:
+            pdf_report_file_path = generar_pdf_reporte(reporte_df, info_df)
+            with open(pdf_report_file_path, "rb") as pdf_report_file:
                 st.download_button(
                     label="Download Report (PDF)",
-                    data=report_pdf_file,
+                    data=pdf_report_file,
                     file_name='report.pdf',
-                    mime='application/pdf',
+                    mime='application/pdf'
                 )
-            os.remove(pdf_file_path)
+            os.remove(pdf_report_file_path)
 
 if __name__ == "__main__":
     main()
