@@ -5,13 +5,10 @@ from io import BytesIO
 import os
 from fpdf import FPDF
 import tempfile
-import numpy as np  # Importa NumPy con el alias 'np'
+import numpy as np
 
 def limpiar_y_validar(dato):
-    # Eliminar caracteres no numéricos
     dato_limpio = re.sub(r'\D', '', dato).strip()
-
-    # Verificar si el dato limpio tiene exactamente 10 dígitos
     if len(dato_limpio) == 10:
         return dato_limpio
     return None
@@ -90,7 +87,7 @@ def main():
             # Reiniciar el puntero del archivo después de contar las líneas
             uploaded_file.seek(0)
 
-        chunk_size = 10000  # Número de líneas a procesar por chunk
+        chunk_size = 10000
         total_numbers = 0
         invalid_numbers_less_than_10 = 0
         invalid_numbers_greater_than_10 = 0
@@ -112,10 +109,10 @@ def main():
                                 invalid_numbers_less_than_10 += 1
                             elif len(re.sub(r'\D', '', number)) > 10:
                                 invalid_numbers_greater_than_10 += 1
-                st.progress((chunk_num + 1) / (chunk_num + 2))
+                st.progress((chunk_num + 1) / (chunk_num + 2)) 
 
         elif file_extension in ["xls", "xlsx"]:
-            reader = pd.read_excel(uploaded_file, None)  # Leer todas las hojas
+            reader = pd.read_excel(uploaded_file, None) 
             for sheet_name, sheet in reader.items():
                 num_chunks = max(1, len(sheet) // chunk_size)
                 for chunk_num, chunk in enumerate(np.array_split(sheet, num_chunks)):
@@ -132,14 +129,14 @@ def main():
                                     invalid_numbers_less_than_10 += 1
                                 elif len(re.sub(r'\D', '', number)) > 10:
                                     invalid_numbers_greater_than_10 += 1
-                    st.progress((chunk_num + 1) / (chunk_num + 2))
+                    st.progress((chunk_num + 1) / (chunk_num + 2)) 
 
         elif file_extension == "txt":
             for i, line in enumerate(uploaded_file):
                 cleaned_line = line.decode("utf-8").strip()
                 numbers = re.split(r'[,\s]+', cleaned_line)
                 for number in numbers:
-                    total_numbers += 1  # Contar todos los números, incluyendo los inválidos
+                    total_numbers += 1
                     cleaned_number = limpiar_y_validar(number)
                     if cleaned_number:
                         output.add(cleaned_number)
@@ -148,10 +145,12 @@ def main():
                             invalid_numbers_less_than_10 += 1
                         elif len(re.sub(r'\D', '', number)) > 10:
                             invalid_numbers_greater_than_10 += 1
-                if (i + 1) % chunk_size == 0:
-                    st.progress((i + 1) / ((i + 1) // chunk_size + 1))
 
-            st.progress(1.0)  # Completar la barra de progreso al final
+                # Actualizar progreso cada chunk procesado
+                if (i + 1) % chunk_size == 0:
+                    st.progress((i + 1) / total_numbers) 
+
+            st.progress(1.0)  
 
         else:
             st.error("Invalid file format. Please upload a CSV, Excel, or Text file.")
