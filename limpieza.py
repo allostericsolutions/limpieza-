@@ -170,7 +170,7 @@ def main():
             buffer.seek(0)
 
             st.download_button(
-                label="Gran your things here",
+                label="Grab your things here",
                 data=buffer.getvalue(),
                 file_name='cleaned_numbers.xlsx',
                 mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -204,7 +204,7 @@ def main():
             'Analysis': ['Analyzed by Allosteric Solutions', 'www.allostericsolutions.com', 'franciscocuriel@allostericsolutions.com']
         })
 
-        st.write("Report Summary:")
+        st.write("Report Summary(you're welcome):")
         st.dataframe(reporte_df)
 
         formato_reporte = st.selectbox("Select report format", ["Excel", "PDF"])
