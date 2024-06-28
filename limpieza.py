@@ -109,10 +109,10 @@ def main():
                                 invalid_numbers_less_than_10 += 1
                             elif len(re.sub(r'\D', '', number)) > 10:
                                 invalid_numbers_greater_than_10 += 1
-                st.progress((chunk_num + 1) / (chunk_num + 2)) 
+                st.progress((chunk_num + 1) / (chunk_num + 2))  
 
         elif file_extension in ["xls", "xlsx"]:
-            reader = pd.read_excel(uploaded_file, None) 
+            reader = pd.read_excel(uploaded_file, None)  
             for sheet_name, sheet in reader.items():
                 num_chunks = max(1, len(sheet) // chunk_size)
                 for chunk_num, chunk in enumerate(np.array_split(sheet, num_chunks)):
@@ -129,9 +129,13 @@ def main():
                                     invalid_numbers_less_than_10 += 1
                                 elif len(re.sub(r'\D', '', number)) > 10:
                                     invalid_numbers_greater_than_10 += 1
-                    st.progress((chunk_num + 1) / (chunk_num + 2)) 
+                    st.progress((chunk_num + 1) / (chunk_num + 2))
 
         elif file_extension == "txt":
+            # Calcular el número total de líneas para la barra de progreso
+            total_lines = sum(1 for _ in uploaded_file)
+            uploaded_file.seek(0)  # Reiniciar el puntero del archivo
+
             for i, line in enumerate(uploaded_file):
                 cleaned_line = line.decode("utf-8").strip()
                 numbers = re.split(r'[,\s]+', cleaned_line)
@@ -148,9 +152,10 @@ def main():
 
                 # Actualizar progreso cada chunk procesado
                 if (i + 1) % chunk_size == 0:
-                    st.progress((i + 1) / total_numbers) 
+                    progress = (i + 1) / total_lines
+                    st.progress(progress) 
 
-            st.progress(1.0)  
+            st.progress(1.0) 
 
         else:
             st.error("Invalid file format. Please upload a CSV, Excel, or Text file.")
