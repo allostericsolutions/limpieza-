@@ -204,7 +204,7 @@ def main():
             'Analysis': ['Analyzed by Allosteric Solutions', 'www.allostericsolutions.com', 'franciscocuriel@allostericsolutions.com']
         })
 
-        st.write("Report Summary(you're welcome):")
+        st.write("Report Summary (you're welcome):")
         st.dataframe(reporte_df)
 
         formato_reporte = st.selectbox("Select report format", ["Excel", "PDF"])
