@@ -53,7 +53,7 @@ def generar_pdf(dataframe):
 def main():
     st.title("Dr. Cleaner")
 
-    st.image("https://i.imgur.com/LzPcPIk.png", caption='Allosteric Solutions', width=300)
+    st.image("https://i.imgur.com/LzPcPIk.png", caption='Allosteric Solutions', width=360)
 
     st.markdown("[Visit our website](https://www.allostericsolutions.com)")
     st.markdown("Contact: [franciscocuriel@allostericsolutions.com](mailto:franciscocuriel@allostericsolutions.com)")
