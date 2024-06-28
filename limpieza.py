@@ -19,6 +19,29 @@ def limpiar_dato(dato):
     except:
         return None
 
+def generar_pdf_reporte(dataframe, info_df):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+
+    # Encabezado
+    pdf.cell(200, 10, txt="Phone Number Cleanup Report", ln=True, align='C')
+
+    # Datos del reporte
+    for i, (desc, count) in dataframe.iterrows():
+        pdf.cell(200, 10, txt=f"{desc}: {count}", ln=True, align='L')
+    
+    # Información adicional del análisis
+    pdf.add_page()
+    pdf.cell(200, 10, txt="Analysis Information", ln=True, align='C')
+    for info in info_df['Analysis']:
+        pdf.cell(200, 10, txt=info, ln=True, align='L')
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmpfile:
+        pdf.output(tmpfile.name)
+
+    return tmpfile.name
+
 def generar_pdf(dataframe):
     pdf = FPDF()
     pdf.add_page()
@@ -85,17 +108,27 @@ def main():
             st.error("Invalid file format. Please upload a CSV, Excel, or Text file.")
             return
 
-        output = []
+        output = set()  # Utilizar un conjunto para evitar duplicados automáticamente
+        total_numbers = 0
+        invalid_numbers_less_than_10 = 0
+        invalid_numbers_greater_than_10 = 0
+
         for line in data:
             # Separar números por coma o espacio
             numbers = re.split(r'[,\s]+', line)
+            total_numbers += len(numbers)
             for number in numbers:
                 cleaned_number = limpiar_dato(number)
-                if cleaned_number is not None and cleaned_number not in output:
-                    output.append(cleaned_number)
+                if cleaned_number is not None:
+                    output.add(cleaned_number)
+                else:
+                    if len(re.sub(r'\D', '', number)) < 10:
+                        invalid_numbers_less_than_10 += 1
+                    elif len(re.sub(r'\D', '', number)) > 10:
+                        invalid_numbers_greater_than_10 += 1
 
         df = pd.DataFrame()
-        df["cleaned_numbers"] = output
+        df["cleaned_numbers"] = list(output)
 
         # Mostrar el DataFrame en la aplicación Streamlit
         st.write("Cleaned Data:")
@@ -125,6 +158,61 @@ def main():
                     label="Download Cleaned PDF",
                     data=pdf_file,
                     file_name='cleaned_numbers.pdf',
+                    mime='application/pdf',
+                )
+            os.remove(pdf_file_path)
+
+        # Generar reporte
+        n_total = total_numbers
+        n_validos = len(output)
+        n_duplicados_eliminados = n_total - (n_validos + invalid_numbers_less_than_10 + invalid_numbers_greater_than_10)
+
+        reporte = {
+            'Total numbers found in the file': n_total,
+            'Total valid numbers processed (exactly 10 digits)': n_validos,
+            'Total disqualified numbers (less than 10 digits)': invalid_numbers_less_than_10,
+            'Total disqualified numbers (more than 10 digits)': invalid_numbers_greater_than_10,
+            'Total duplicate numbers removed': n_duplicados_eliminados
+        }
+
+        # Crear DataFrame para reporte
+        reporte_df = pd.DataFrame(list(reporte.items()), columns=['Description', 'Count'])
+
+        # Añadir información adicional del análisis
+        info_df = pd.DataFrame({
+            'Analysis': ['Analyzed by Allosteric Solutions', 'www.allostericsolutions.com', 'franciscocuriel@allostericsolutions.com']
+        })
+
+        # Mostrar el resumen del reporte en la interfaz de Streamlit
+        st.write("Report Summary:")
+        st.dataframe(reporte_df)
+
+        # Permitir al usuario seleccionar el formato del reporte (Excel o PDF)
+        formato_reporte = st.selectbox("Select report format", ["Excel", "PDF"])
+
+        if formato_reporte == "Excel":
+            # Guardar el archivo de reporte en Excel
+            reporte_file = 'report.xlsx'
+            with pd.ExcelWriter(reporte_file) as writer:
+                reporte_df.to_excel(writer, sheet_name='Summary', index=False)
+                info_df.to_excel(writer, sheet_name='Analysis Info', index=False)
+
+            with open(reporte_file, "rb") as report_file:
+                st.download_button(
+                    label="Download Report (Excel)",
+                    data=report_file,
+                    file_name='report.xlsx',
+                    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                )
+        
+        elif formato_reporte == "PDF":
+            # Generar el archivo de reporte en PDF
+            pdf_file_path = generar_pdf_reporte(reporte_df, info_df)
+            with open(pdf_file_path, "rb") as report_pdf_file:
+                st.download_button(
+                    label="Download Report (PDF)",
+                    data=report_pdf_file,
+                    file_name='report.pdf',
                     mime='application/pdf',
                 )
             os.remove(pdf_file_path)
