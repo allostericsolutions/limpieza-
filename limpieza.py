@@ -111,6 +111,25 @@ def process_line(line, output, tipo):
         else:
             invalid_items += 1
 
+def download_excel(df):
+    MAX_ROWS = 1048576  # Máximo número de filas permitido por hoja en Excel
+    buffer = BytesIO()
+    try:
+        with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+            for i in range(0, len(df), MAX_ROWS):
+                df.iloc[i:i + MAX_ROWS].to_excel(writer, sheet_name=f'Sheet{i//MAX_ROWS + 1}', index=False)
+        buffer.seek(0)
+        return buffer
+    except Exception as e:
+        st.error(f"Error exporting to Excel: {e}")
+        return None
+
+def download_csv(df):
+    buffer = BytesIO()
+    df.to_csv(buffer, index=False)
+    buffer.seek(0)
+    return buffer
+
 def main():
     st.title("Dr. Cleaner")
     st.image("https://i.imgur.com/LzPcPIk.png", caption='Allosteric Solutions', width=360)
@@ -139,21 +158,25 @@ def main():
         st.write("Cleaned Data:")
         st.dataframe(df)
 
-        formato_salida = st.selectbox("Choose Your Fancy Output!", ["Excel", "PDF"])
+        formato_salida = st.selectbox("Choose Your Fancy Output!", ["CSV", "Excel", "PDF"])
         
-        if formato_salida == "Excel":
-            buffer = BytesIO()
-            try:
-                df.to_excel(buffer, index=False)
-                buffer.seek(0)
+        if formato_salida == "CSV":
+            buffer = download_csv(df)
+            st.download_button(
+                label="Grab your things here",
+                data=buffer.getvalue(),
+                file_name='cleaned_data.csv',
+                mime='text/csv'
+            )
+        elif formato_salida == "Excel":
+            buffer = download_excel(df)
+            if buffer:
                 st.download_button(
                     label="Grab your things here",
                     data=buffer.getvalue(),
                     file_name='cleaned_data.xlsx',
                     mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                 )
-            except Exception as e:
-                st.error(f"Error exporting to Excel: {e}")
         elif formato_salida == "PDF":
             pdf_file_path = generar_pdf(df)
             with open(pdf_file_path, "rb") as pdf_file:
@@ -185,7 +208,7 @@ def main():
         if formato_reporte == "Excel":
             reporte_file = 'report.xlsx'
             try:
-                with pd.ExcelWriter(reporte_file) as writer:
+                with pd.ExcelWriter(reporte_file, engine='xlsxwriter') as writer:
                     reporte_df.to_excel(writer, sheet_name='Summary', index=False)
                     info_df.to_excel(writer, sheet_name='Analysis Info', index=False)
                 with open(reporte_file, "rb") as report_file:
