@@ -79,7 +79,7 @@ def procesar_archivos(uploaded_files, tipo='telefonos'):
                 uploaded_file.seek(0)
                 cleaned_lines = leer_csv_limpio(uploaded_file)
                 if cleaned_lines is not None:
-                    reader = pd.read_csv(BytesIO(cleaned_lines), chunksize=chunk_size, header=None)  # Modificacion
+                    reader = pd.read_csv(BytesIO(cleaned_lines), chunksize=chunk_size, header=None)
                     for chunk in reader:
                         process_chunk(chunk, output, tipo)
                     
@@ -126,7 +126,7 @@ def download_excel(df):
     try:
         with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
             for i in range(0, len(df), MAX_ROWS):
-                df.iloc[i:i + MAX_ROWS].to_excel(writer, sheet_name=f'Sheet{i//MAX_ROWS + 1}', index=False)
+                df.iloc[i:i + MAX_ROWS].to_excel(writer, sheet_name=f'Sheet{i//MAX_ROWS + 1}', index=False, header=False) 
         buffer.seek(0)
         return buffer
     except Exception as e:
@@ -135,7 +135,7 @@ def download_excel(df):
 
 def download_csv(df):
     buffer = BytesIO()
-    df.to_csv(buffer, index=False)
+    df.to_csv(buffer, index=False, header=False)
     buffer.seek(0)
     return buffer
 
