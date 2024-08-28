@@ -51,29 +51,9 @@ def limpiar_y_validar_correo(dato):
         return dato
     return None
 
-def leer_csv(uploaded_file, chunk_size):
-    try:
-        for chunk in pd.read_csv(uploaded_file, chunksize=chunk_size, header=None, on_bad_lines='skip'):
-            yield chunk
-    except Exception as e:
-        st.error(f"Error processing CSV file {uploaded_file.name}: {e}")
-
-def leer_txt(uploaded_file, chunk_size):
-    try:
-        for chunk in pd.read_csv(uploaded_file, chunksize=chunk_size, header=None, delimiter='\n', on_bad_lines='skip'):
-            yield chunk
-    except Exception as e:
-        st.error(f"Error processing TXT file {uploaded_file.name}: {e}")
-
-def leer_excel(uploaded_file):
-    try:
-        return pd.read_excel(uploaded_file, None)
-    except Exception as e:
-        st.error(f"Error processing Excel file {uploaded_file.name}: {e}")
-
 # Procesamiento de archivos masivos
 def procesar_archivos(uploaded_files, tipo='telefonos'):
-    chunk_size = 10000
+    chunk_size = 10000 # Tamaño de los chunks
     output = set()  # Usamos un set para eliminar duplicados automáticamente
     invalid_items = 0
     total_items = 0
@@ -81,38 +61,48 @@ def procesar_archivos(uploaded_files, tipo='telefonos'):
     for uploaded_file in uploaded_files:
         file_extension = uploaded_file.name.split('.')[-1]
 
-        if file_extension == "csv":
-            for chunk in leer_csv(uploaded_file, chunk_size):
-                process_chunk(chunk, output, tipo)
-                    
-        elif file_extension == "txt":
-            for chunk in leer_txt(uploaded_file, chunk_size):
-                process_chunk(chunk, output, tipo)
-                
-        elif file_extension in ["xls", "xlsx"]:
-            sheets = leer_excel(uploaded_file)
-            for sheet_name, sheet in sheets.items():
-                num_chunks = max(1, len(sheet) // chunk_size)
-                for chunk in np.array_split(sheet, num_chunks):
+        try:
+            if file_extension == "csv":
+                uploaded_file.seek(0)
+                reader = pd.read_csv(uploaded_file, chunksize=chunk_size, header=None)
+                for chunk in reader:
                     process_chunk(chunk, output, tipo)
+                    
+            elif file_extension == "txt":
+                uploaded_file.seek(0)
+                # Leer archivo línea por línea
+                for line in uploaded_file:
+                    process_line(line.decode('utf-8'), output, tipo)
+                
+            elif file_extension in ["xls", "xlsx"]:
+                reader = pd.read_excel(uploaded_file, None)
+                for sheet_name, sheet in reader.items():
+                    num_chunks = max(1, len(sheet) // chunk_size)
+                    for chunk in np.array_split(sheet, num_chunks):
+                        process_chunk(chunk, output, tipo)
+        except Exception as e:
+            st.error(f"Error processing file {uploaded_file.name}: {e}")
     
     return output, invalid_items, total_items
 
 def process_chunk(chunk, output, tipo):
-    global invalid_items, total_items
     fondos_planos = chunk.values.flatten().astype(str).tolist()
     for line in fondos_planos:
-        datos = re.split(r'[,\s]+', line)
-        for dato in datos:
-            total_items += 1
-            if tipo == 'emails':
-                cleaned_dato = limpiar_y_validar_correo(dato)
-            else:
-                cleaned_dato = limpiar_y_validar(dato)
-            if cleaned_dato is not None:
-                output.add(cleaned_dato)
-            else:
-                invalid_items += 1
+        process_line(line, output, tipo)
+
+def process_line(line, output, tipo):
+    global invalid_items, total_items
+    datos = re.split(r'[,\s]+', line.strip())
+    for dato in datos:
+        total_items += 1
+        if tipo == 'emails':
+            cleaned_dato = limpiar_y_validar_correo(dato)
+        else:
+            cleaned_dato = limpiar_y_validar(dato)
+        if cleaned_dato is not None:
+            output.add(cleaned_dato)
+        else:
+            invalid_items += 1
 
 def main():
     st.title("Dr. Cleaner")
