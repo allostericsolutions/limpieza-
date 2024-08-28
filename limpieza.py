@@ -7,7 +7,7 @@ from fpdf import FPDF
 import tempfile
 import numpy as np
 
-# Funciones existente para limpieza y manejo de números de teléfono
+# Funciones existentes para la limpieza y manejo de números de teléfono
 def limpiar_y_validar(dato):
     dato_limpio = re.sub(r'\D', '', dato).strip()
     if len(dato_limpio) == 10:
@@ -51,12 +51,18 @@ def limpiar_y_validar_correo(dato):
         return dato
     return None
 
+# Variables globales para mantener seguimiento de los totales
+total_items = 0
+invalid_items = 0
+
 # Procesamiento de archivos masivos
 def procesar_archivos(uploaded_files, tipo='telefonos'):
-    chunk_size = 10000 # Tamaño de los chunks
+    global total_items, invalid_items
+
+    chunk_size = 10000  # Tamaño de los chunks
     output = set()  # Usamos un set para eliminar duplicados automáticamente
-    invalid_items = 0
     total_items = 0
+    invalid_items = 0
     
     for uploaded_file in uploaded_files:
         file_extension = uploaded_file.name.split('.')[-1]
@@ -86,12 +92,13 @@ def procesar_archivos(uploaded_files, tipo='telefonos'):
     return output, invalid_items, total_items
 
 def process_chunk(chunk, output, tipo):
+    global total_items, invalid_items
     fondos_planos = chunk.values.flatten().astype(str).tolist()
     for line in fondos_planos:
         process_line(line, output, tipo)
 
 def process_line(line, output, tipo):
-    global invalid_items, total_items
+    global total_items, invalid_items
     datos = re.split(r'[,\s]+', line.strip())
     for dato in datos:
         total_items += 1
