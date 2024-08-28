@@ -57,12 +57,11 @@ invalid_items = 0
 
 def leer_csv_limpio(file):
     lines = []
-    file.seek(0)
     for line in file:
         try:
             # Si la línea tiene el número correcto de campos, añadirla
-            pd.read_csv(BytesIO(line), header=None)
-            lines.append(line.decode('utf-8'))
+            pd.read_csv(BytesIO(line.encode()), header=None)
+            lines.append(line)
         except pd.errors.ParserError:
             continue  # Ignorar silenciosamente las líneas malformadas
     return lines
@@ -83,28 +82,22 @@ def procesar_archivos(uploaded_files, tipo='telefonos'):
             if file_extension == "csv":
                 uploaded_file.seek(0)
                 cleaned_lines = leer_csv_limpio(uploaded_file)
-                total_lines = len(cleaned_lines)
                 reader = pd.read_csv(BytesIO('\n'.join(cleaned_lines).encode()), chunksize=chunk_size, header=None)
-                for chunk_idx, chunk in enumerate(reader):
+                for chunk in reader:
                     process_chunk(chunk, output, tipo)
-                    st.progress(chunk_idx / (total_lines / chunk_size))
                     
             elif file_extension == "txt":
                 uploaded_file.seek(0)
-                total_lines = sum(1 for line in uploaded_file)
-                uploaded_file.seek(0)
                 # Leer archivo línea por línea
-                for line_idx, line in enumerate(uploaded_file):
+                for line in uploaded_file:
                     process_line(line.decode('utf-8'), output, tipo)
-                    st.progress(line_idx / total_lines)
                 
             elif file_extension in ["xls", "xlsx"]:
                 reader = pd.read_excel(uploaded_file, None)
                 for sheet_name, sheet in reader.items():
                     num_chunks = max(1, len(sheet) // chunk_size)
-                    for chunk_idx, chunk in enumerate(np.array_split(sheet, num_chunks)):
+                    for chunk in np.array_split(sheet, num_chunks):
                         process_chunk(chunk, output, tipo)
-                        st.progress(chunk_idx / num_chunks)
         except Exception as e:
             st.error(f"Error processing file {uploaded_file.name}: {e}")
     
