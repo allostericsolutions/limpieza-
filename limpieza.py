@@ -55,6 +55,20 @@ def limpiar_y_validar_correo(dato):
 total_items = 0
 invalid_items = 0
 
+def leer_csv_limpio(file):
+    lines = []
+    count = 0
+    error_lines = 0
+    for line in file:
+        try:
+            # If the line has a correct number of fields, append it
+            pd.read_csv(BytesIO(line.encode()), header=None)
+            lines.append(line)
+        except pd.errors.ParserError:
+            error_lines += 1
+    st.warning(f"Removed {error_lines} lines with errors.")
+    return lines
+
 # Procesamiento de archivos masivos
 def procesar_archivos(uploaded_files, tipo='telefonos'):
     global total_items, invalid_items
@@ -70,7 +84,8 @@ def procesar_archivos(uploaded_files, tipo='telefonos'):
         try:
             if file_extension == "csv":
                 uploaded_file.seek(0)
-                reader = pd.read_csv(uploaded_file, chunksize=chunk_size, header=None)
+                cleaned_lines = leer_csv_limpio(uploaded_file)
+                reader = pd.read_csv(BytesIO('\n'.join(cleaned_lines).encode()), chunksize=chunk_size, header=None)
                 for chunk in reader:
                     process_chunk(chunk, output, tipo)
                     
