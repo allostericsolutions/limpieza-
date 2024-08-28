@@ -57,16 +57,13 @@ invalid_items = 0
 
 def leer_csv_limpio(file):
     lines = []
-    count = 0
-    error_lines = 0
     for line in file:
         try:
-            # If the line has a correct number of fields, append it
+            # Si la línea tiene el número correcto de campos, añadirla
             pd.read_csv(BytesIO(line.encode()), header=None)
             lines.append(line)
         except pd.errors.ParserError:
-            error_lines += 1
-    st.warning(f"Removed {error_lines} lines with errors.")
+            continue  # Ignorar silenciosamente las líneas malformadas
     return lines
 
 # Procesamiento de archivos masivos
