@@ -35,7 +35,7 @@ def generar_pdf(dataframe):
     pdf.set_font("Arial", size=12)
     pdf.cell(200, 10, txt="Cleaned Phone Numbers", ln=True, align='C')
     for index, row in dataframe.iterrows():
-        pdf.cell(200, 10, txt=row['cleaned_numbers'], ln=True, align='C')
+        pdf.cell(200, 10, txt=row['cleaned_data'], ln=True, align='C')
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmpfile:
         pdf.output(tmpfile.name)
     return tmpfile.name
@@ -135,7 +135,7 @@ def download_excel(df):
 
 def download_csv(df):
     buffer = BytesIO()
-    df.to_csv(buffer, index=False, header=False)
+    df.to_csv(buffer, index=False, header=False)  # Asegúrate de que header=False está aquí
     buffer.seek(0)
     return buffer
 
