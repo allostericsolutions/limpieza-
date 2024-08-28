@@ -57,52 +57,45 @@ def procesar_archivos(uploaded_files, tipo='telefonos'):
     output = set()
     invalid_items = 0
     total_items = 0
-    
+
     for uploaded_file in uploaded_files:
         file_extension = uploaded_file.name.split('.')[-1]
 
-        if file_extension in ["csv", "txt"]:
-            uploaded_file.seek(0)
+        try:
             if file_extension == "csv":
+                uploaded_file.seek(0)
                 reader = pd.read_csv(uploaded_file, chunksize=chunk_size, header=None)
-            else:
-                reader = pd.read_csv(uploaded_file, chunksize=chunk_size, header=None, delimiter='\n')
+                for chunk in reader:
+                    process_chunk(chunk, output, tipo)
+                    
+            elif file_extension == "txt":
+                uploaded_file.seek(0)
+                for chunk in pd.read_fwf(uploaded_file, chunksize=chunk_size, header=None):
+                    process_chunk(chunk, output, tipo)
+                    
+            elif file_extension in ["xls", "xlsx"]:
+                reader = pd.read_excel(uploaded_file, None)
+                for sheet_name, sheet in reader.items():
+                    num_chunks = max(1, len(sheet) // chunk_size)
+                    for chunk in np.array_split(sheet, num_chunks):
+                        process_chunk(chunk, output, tipo)
 
-            for chunk in reader:
-                fondos_planos = chunk.values.flatten().astype(str).tolist()
-                for line in fondos_planos:
-                    datos = re.split(r'[,\s]+', line)
-                    for dato in datos:
-                        total_items += 1
-                        if tipo == 'emails':
-                            cleaned_dato = limpiar_y_validar_correo(dato)
-                        else:
-                            cleaned_dato = limpiar_y_validar(dato)
-                        if cleaned_dato is not None:
-                            output.add(cleaned_dato)
-                        else:
-                            invalid_items += 1
-                
-        elif file_extension in ["xls", "xlsx"]:
-            reader = pd.read_excel(uploaded_file, None)
-            for sheet_name, sheet in reader.items():
-                num_chunks = max(1, len(sheet) // chunk_size)
-                for chunk in np.array_split(sheet, num_chunks):
-                    fondos_planos = chunk.values.flatten().astype(str).tolist()
-                    for line in fondos_planos:
-                        datos = re.split(r'[,\s]+', line)
-                        for dato in datos:
-                            total_items += 1
-                            if tipo == 'emails':
-                                cleaned_dato = limpiar_y_validar_correo(dato)
-                            else:
-                                cleaned_dato = limpiar_y_validar(dato)
-                            if cleaned_dato is not None:
-                                output.add(cleaned_dato)
-                            else:
-                                invalid_items += 1
+        except Exception as e:
+            st.error(f"Error processing file {uploaded_file.name}: {e}")
     
     return output, invalid_items, total_items
+
+def process_chunk(chunk, output, tipo):
+    fondos_planos = chunk.values.flatten().astype(str).tolist()
+    for line in fondos_planos:
+        datos = re.split(r'[,\s]+', line)
+        for dato in datos:
+            if tipo == 'emails':
+                cleaned_dato = limpiar_y_validar_correo(dato)
+            else:
+                cleaned_dato = limpiar_y_validar(dato)
+            if cleaned_dato is not None:
+                output.add(cleaned_dato)
 
 def main():
     st.title("Dr. Cleaner")
