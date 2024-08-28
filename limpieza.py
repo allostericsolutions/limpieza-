@@ -56,15 +56,11 @@ total_items = 0
 invalid_items = 0
 
 def leer_csv_limpio(file):
-    lines = []
-    for line in file:
-        try:
-            # Si la línea tiene el número correcto de campos, añadirla
-            pd.read_csv(BytesIO(line.encode()), header=None)
-            lines.append(line)
-        except pd.errors.ParserError:
-            continue  # Ignorar silenciosamente las líneas malformadas
-    return lines
+    try:
+        df = pd.read_csv(file, header=None)
+        return df
+    except pd.errors.ParserError:
+        return None
 
 # Procesamiento de archivos masivos
 def procesar_archivos(uploaded_files, tipo='telefonos'):
@@ -82,9 +78,10 @@ def procesar_archivos(uploaded_files, tipo='telefonos'):
             if file_extension == "csv":
                 uploaded_file.seek(0)
                 cleaned_lines = leer_csv_limpio(uploaded_file)
-                reader = pd.read_csv(BytesIO('\n'.join(cleaned_lines).encode()), chunksize=chunk_size, header=None)
-                for chunk in reader:
-                    process_chunk(chunk, output, tipo)
+                if cleaned_lines is not None:
+                    reader = pd.read_csv(BytesIO('\n'.join(cleaned_lines).encode()), chunksize=chunk_size, header=None)
+                    for chunk in reader:
+                        process_chunk(chunk, output, tipo)
                     
             elif file_extension == "txt":
                 uploaded_file.seek(0)
