@@ -79,7 +79,7 @@ def procesar_archivos(uploaded_files, tipo='telefonos'):
                 uploaded_file.seek(0)
                 cleaned_lines = leer_csv_limpio(uploaded_file)
                 if cleaned_lines is not None:
-                    reader = pd.read_csv(BytesIO('\n'.join(cleaned_lines).encode()), chunksize=chunk_size, header=None)
+                    reader = pd.read_csv(BytesIO('\n'.join(cleaned_lines)), chunksize=chunk_size, header=None)
                     for chunk in reader:
                         process_chunk(chunk, output, tipo)
                     
