@@ -60,8 +60,8 @@ def leer_csv_limpio(file):
     for line in file:
         try:
             # Si la línea tiene el número correcto de campos, añadirla
-            pd.read_csv(BytesIO(line.encode()), header=None)
-            lines.append(line)
+            pd.read_csv(BytesIO(line), header=None)
+            lines.append(line.decode('utf-8'))
         except pd.errors.ParserError:
             continue  # Ignorar silenciosamente las líneas malformadas
     return lines
@@ -85,7 +85,7 @@ def procesar_archivos(uploaded_files, tipo='telefonos'):
                 reader = pd.read_csv(BytesIO('\n'.join(cleaned_lines).encode()), chunksize=chunk_size, header=None)
                 for chunk in reader:
                     process_chunk(chunk, output, tipo)
-                    
+
             elif file_extension == "txt":
                 uploaded_file.seek(0)
                 # Leer archivo línea por línea
