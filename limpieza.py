@@ -51,6 +51,26 @@ def limpiar_y_validar_correo(dato):
         return dato
     return None
 
+def leer_csv(uploaded_file, chunk_size):
+    try:
+        for chunk in pd.read_csv(uploaded_file, chunksize=chunk_size, header=None, on_bad_lines='skip'):
+            yield chunk
+    except Exception as e:
+        st.error(f"Error processing CSV file {uploaded_file.name}: {e}")
+
+def leer_txt(uploaded_file, chunk_size):
+    try:
+        for chunk in pd.read_csv(uploaded_file, chunksize=chunk_size, header=None, delimiter='\n', on_bad_lines='skip'):
+            yield chunk
+    except Exception as e:
+        st.error(f"Error processing TXT file {uploaded_file.name}: {e}")
+
+def leer_excel(uploaded_file):
+    try:
+        return pd.read_excel(uploaded_file, None)
+    except Exception as e:
+        st.error(f"Error processing Excel file {uploaded_file.name}: {e}")
+
 # Procesamiento de archivos masivos
 def procesar_archivos(uploaded_files, tipo='telefonos'):
     chunk_size = 10000
@@ -61,31 +81,20 @@ def procesar_archivos(uploaded_files, tipo='telefonos'):
     for uploaded_file in uploaded_files:
         file_extension = uploaded_file.name.split('.')[-1]
 
-        try:
-            if file_extension == "csv":
-                uploaded_file.seek(0)
-                reader = pd.read_csv(uploaded_file, chunksize=chunk_size, header=None, error_bad_lines=False, warn_bad_lines=True)
-                for chunk in reader:
-                    process_chunk(chunk, output, tipo)
+        if file_extension == "csv":
+            for chunk in leer_csv(uploaded_file, chunk_size):
+                process_chunk(chunk, output, tipo)
                     
-            elif file_extension == "txt":
-                uploaded_file.seek(0)
-                try:
-                    reader = pd.read_csv(uploaded_file, chunksize=chunk_size, header=None, delimiter='\t', error_bad_lines=False, warn_bad_lines=True)
-                except pd.errors.ParserError as e:
-                    st.warning(f"Error parsing TXT file {uploaded_file.name}: {e}")
-                for chunk in reader:
+        elif file_extension == "txt":
+            for chunk in leer_txt(uploaded_file, chunk_size):
+                process_chunk(chunk, output, tipo)
+                
+        elif file_extension in ["xls", "xlsx"]:
+            sheets = leer_excel(uploaded_file)
+            for sheet_name, sheet in sheets.items():
+                num_chunks = max(1, len(sheet) // chunk_size)
+                for chunk in np.array_split(sheet, num_chunks):
                     process_chunk(chunk, output, tipo)
-
-            elif file_extension in ["xls", "xlsx"]:
-                reader = pd.read_excel(uploaded_file, None)
-                for sheet_name, sheet in reader.items():
-                    num_chunks = max(1, len(sheet) // chunk_size)
-                    for chunk in np.array_split(sheet, num_chunks):
-                        process_chunk(chunk, output, tipo)
-
-        except Exception as e:
-            st.error(f"Error processing file {uploaded_file.name}: {e}")
     
     return output, invalid_items, total_items
 
