@@ -54,25 +54,29 @@ def limpiar_y_validar_correo(dato):
 # Procesamiento de archivos masivos
 def procesar_archivos(uploaded_files, tipo='telefonos'):
     chunk_size = 10000
-    output = set()
+    output = set()  # Usamos un set para eliminar duplicados automáticamente
     invalid_items = 0
     total_items = 0
-
+    
     for uploaded_file in uploaded_files:
         file_extension = uploaded_file.name.split('.')[-1]
 
         try:
             if file_extension == "csv":
                 uploaded_file.seek(0)
-                reader = pd.read_csv(uploaded_file, chunksize=chunk_size, header=None)
+                reader = pd.read_csv(uploaded_file, chunksize=chunk_size, header=None, error_bad_lines=False, warn_bad_lines=True)
                 for chunk in reader:
                     process_chunk(chunk, output, tipo)
                     
             elif file_extension == "txt":
                 uploaded_file.seek(0)
-                for chunk in pd.read_fwf(uploaded_file, chunksize=chunk_size, header=None):
+                try:
+                    reader = pd.read_csv(uploaded_file, chunksize=chunk_size, header=None, delimiter='\t', error_bad_lines=False, warn_bad_lines=True)
+                except pd.errors.ParserError as e:
+                    st.warning(f"Error parsing TXT file {uploaded_file.name}: {e}")
+                for chunk in reader:
                     process_chunk(chunk, output, tipo)
-                    
+
             elif file_extension in ["xls", "xlsx"]:
                 reader = pd.read_excel(uploaded_file, None)
                 for sheet_name, sheet in reader.items():
@@ -86,16 +90,20 @@ def procesar_archivos(uploaded_files, tipo='telefonos'):
     return output, invalid_items, total_items
 
 def process_chunk(chunk, output, tipo):
+    global invalid_items, total_items
     fondos_planos = chunk.values.flatten().astype(str).tolist()
     for line in fondos_planos:
         datos = re.split(r'[,\s]+', line)
         for dato in datos:
+            total_items += 1
             if tipo == 'emails':
                 cleaned_dato = limpiar_y_validar_correo(dato)
             else:
                 cleaned_dato = limpiar_y_validar(dato)
             if cleaned_dato is not None:
                 output.add(cleaned_dato)
+            else:
+                invalid_items += 1
 
 def main():
     st.title("Dr. Cleaner")
@@ -129,14 +137,17 @@ def main():
         
         if formato_salida == "Excel":
             buffer = BytesIO()
-            df.to_excel(buffer, index=False)
-            buffer.seek(0)
-            st.download_button(
-                label="Grab your things here",
-                data=buffer.getvalue(),
-                file_name='cleaned_data.xlsx',
-                mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-            )
+            try:
+                df.to_excel(buffer, index=False)
+                buffer.seek(0)
+                st.download_button(
+                    label="Grab your things here",
+                    data=buffer.getvalue(),
+                    file_name='cleaned_data.xlsx',
+                    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                )
+            except Exception as e:
+                st.error(f"Error exporting to Excel: {e}")
         elif formato_salida == "PDF":
             pdf_file_path = generar_pdf(df)
             with open(pdf_file_path, "rb") as pdf_file:
@@ -167,16 +178,19 @@ def main():
 
         if formato_reporte == "Excel":
             reporte_file = 'report.xlsx'
-            with pd.ExcelWriter(reporte_file) as writer:
-                reporte_df.to_excel(writer, sheet_name='Summary', index=False)
-                info_df.to_excel(writer, sheet_name='Analysis Info', index=False)
-            with open(reporte_file, "rb") as report_file:
-                st.download_button(
-                    label="Retrieve Your Report Here",
-                    data=report_file,
-                    file_name='report.xlsx',
-                    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                )
+            try:
+                with pd.ExcelWriter(reporte_file) as writer:
+                    reporte_df.to_excel(writer, sheet_name='Summary', index=False)
+                    info_df.to_excel(writer, sheet_name='Analysis Info', index=False)
+                with open(reporte_file, "rb") as report_file:
+                    st.download_button(
+                        label="Retrieve Your Report Here",
+                        data=report_file,
+                        file_name='report.xlsx',
+                        mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                    )
+            except Exception as e:
+                st.error(f"Error exporting report to Excel: {e}")
         elif formato_reporte == "PDF":
             pdf_report_file_path = generar_pdf_reporte(reporte_df, info_df)
             with open(pdf_report_file_path, "rb") as pdf_report_file:
