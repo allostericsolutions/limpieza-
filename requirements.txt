@@ -1,6 +1,4 @@
-  streamlit
-   pandas
-   openpyxl
-   fpdf
-   numpy
-xlsxwriter
+streamlit
+pandas
+openpyxl
+fpdf
