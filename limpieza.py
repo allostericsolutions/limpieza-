@@ -88,7 +88,7 @@ def main():
 
         if formato_salida == "Excel":
             buffer = BytesIO()
-            df.to_excel(buffer, index=False)
+            df.to_excel(buffer, index=False, header=False)  # Exportar a Excel sin encabezado
             buffer.seek(0)
 
             st.download_button(
@@ -111,7 +111,7 @@ def main():
 
         elif formato_salida == "CSV":
             buffer = BytesIO()
-            df.to_csv(buffer, index=False)
+            df.to_csv(buffer, index=False, header=False)  # Exportar a CSV sin encabezado
             buffer.seek(0)
 
             st.download_button(
