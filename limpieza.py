@@ -78,15 +78,17 @@ def procesar_archivos(uploaded_files, tipo='telefonos'):
         try:
             if file_extension == "csv":
                 uploaded_file.seek(0)
-                reader = pd.read_csv(uploaded_file, chunksize=chunk_size, header=None, error_bad_lines=False)
-                for chunk in reader:
+                for chunk in pd.read_csv(uploaded_file, chunksize=chunk_size, header=None, error_bad_lines=False):
                     process_chunk(chunk, output, tipo)
 
             elif file_extension == "txt":
                 uploaded_file.seek(0)
                 # Leer archivo línea por línea
                 for line in uploaded_file:
-                    process_line(line.decode('utf-8'), output, tipo)
+                    try:
+                        process_line(line.decode('utf-8'), output, tipo)
+                    except Exception as e:
+                        continue  # Ignorar líneas problemáticas
 
             elif file_extension in ["xls", "xlsx"]:
                 reader = pd.read_excel(uploaded_file, None)
@@ -95,7 +97,7 @@ def procesar_archivos(uploaded_files, tipo='telefonos'):
                     for chunk in np.array_split(sheet, num_chunks):
                         process_chunk(chunk, output, tipo)
         except Exception as e:
-            st.error(f"Error processing file {uploaded_file.name}: {e}")
+            continue  # Ignorar cualquier otro error inesperado
 
     return output, invalid_items, total_items
 
@@ -104,6 +106,26 @@ def download_txt(df):
     buffer.write('\n'.join(df['cleaned_data']).encode('utf-8'))
     buffer.seek(0)
     return buffer
+
+def generar_reporte_telefonos(total_items, n_validos, invalid_items, output):
+    n_duplicados_eliminados = max(0, total_items - n_validos - invalid_items)
+    reporte = {
+        'Total numbers found in the file(s)': total_items,
+        'Total valid numbers processed (exactly 10 digits)': n_validos,
+        'Total invalid numbers': total_items - n_validos,
+        'Total duplicate numbers removed': n_duplicados_eliminados
+    }
+    return reporte
+
+def generar_reporte_correos(total_items, n_validos, invalid_items, output):
+    n_duplicados_eliminados = max(0, total_items - n_validos - invalid_items)
+    reporte = {
+        'Total emails found in the file(s)': total_items,
+        'Total valid emails processed': n_validos,
+        'Total invalid emails': total_items - n_validos,
+        'Total duplicate emails removed': n_duplicados_eliminados
+    }
+    return reporte
 
 def main():
     st.title("Dr. Cleaner")
@@ -173,14 +195,12 @@ def main():
 
         n_validos = len(output)
         total_invalid_items = total_items - n_validos
-        n_duplicados_eliminados = max(0, total_items - n_validos - invalid_items)
 
-        reporte = {
-            f'Total {options.lower()} found in the file(s)': total_items,
-            f'Total valid {options.lower()} processed': n_validos,
-            f'Total invalid {options.lower()}': total_invalid_items,
-            f'Total duplicate {options.lower()} removed': n_duplicados_eliminados
-        }
+        # Generar reporte específico basado en tipo de análisis
+        if tipo == 'emails':
+            reporte = generar_reporte_correos(total_items, n_validos, invalid_items, output)
+        else:
+            reporte = generar_reporte_telefonos(total_items, n_validos, invalid_items, output)
 
         reporte_df = pd.DataFrame(list(reporte.items()), columns=['Description', 'Count'])
         info_df = pd.DataFrame({
