@@ -7,6 +7,7 @@ from fpdf import FPDF
 import tempfile
 import numpy as np
 from limpieza_texto import limpiar_y_procesar_archivo  # Importar la función desde el módulo
+from contenido import mostrar_features, mostrar_como_usar  # Importar las nuevas funciones
 
 def generar_pdf_reporte(dataframe, info_df):
     pdf = FPDF()
@@ -46,31 +47,14 @@ def generar_pdf(dataframe):
 def main():
     st.title("Dr. Cleaner")
 
-    st.image("https://i.imgur.com/LzPcPIk.png", caption='Allosteric Solutions', width=360)
+    # Mover el logo y el contacto a la barra lateral
+    st.sidebar.image("https://i.imgur.com/LzPcPIk.png", caption='Allosteric Solutions', use_column_width=True)
+    st.sidebar.markdown("[Visit our website](https://www.allostericsolutions.com)")
+    st.sidebar.markdown("Contact: [franciscocuriel@allostericsolutions.com](mailto:franciscocuriel@allostericsolutions.com)")
 
-    st.markdown("[Visit our website](https://www.allostericsolutions.com)")
-    st.markdown("Contact: [franciscocuriel@allostericsolutions.com](mailto:franciscocuriel@allostericsolutions.com)")
-
-    with st.expander("Features"):
-        st.markdown("""
-        1. Removes duplicate numbers
-        2. Filters out numbers with more or less than 10 digits
-        3. Eliminates non-numeric characters
-        4. **Makes your phone number list sparkle**: Because who doesn't love a clean and shiny phone number list?
-        """)
-
-    with st.expander("How to Use"):
-        st.markdown("""
-        1. **Upload your file:** You can upload multiple files in the following formats:
-            * **CSV (.csv)**
-            * **Excel (.xls, .xlsx)**
-            * **Text (.txt)** (Make sure each phone number is on a separate line)
-        2. **Download the cleaned file:** After processing, you can download your cleaned phone number list in either:
-            * **Excel (.xlsx)**
-            * **PDF (.pdf)**
-            * **CSV (.csv)**
-        3. **Enjoy the Magic**: Sit back and relax while our app works its magic. It's like having a personal assistant who loves cleaning up phone numbers!
-        """)
+    # Mostrar "Features" y "How to Use" importados del archivo contenido.py
+    mostrar_features()
+    mostrar_como_usar()
 
     uploaded_files = st.file_uploader("Drop Your Junk Here", type=["csv", "xls", "xlsx", "txt"], accept_multiple_files=True)
 
