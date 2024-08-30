@@ -3,6 +3,10 @@ import re
 import numpy as np
 
 def limpiar_y_validar(dato):
+    # Detectar y normalizar la excepción específica
+    if re.match(r'^\(\d{1,3}\) ', dato):
+        dato = re.sub(r'^\((\d{1,3})\) ', r'\1', dato)
+        
     dato_limpio = re.sub(r'\D', '', dato).strip()
     if len(dato_limpio) == 10:
         return dato_limpio
