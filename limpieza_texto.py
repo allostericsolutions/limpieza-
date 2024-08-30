@@ -2,27 +2,17 @@ import pandas as pd
 import re
 import numpy as np
 
-# Función modificada para incluir depuración
 def limpiar_y_validar(dato):
-    print(f"Original: {dato}")  # Depuración: Mostrar el dato original
-
     # Detectar y normalizar la excepción específica
     if re.match(r'^\(\d{1,3}\) ', dato):
-        print("Excepción detectada: Patrón (NNN) ")  # Depuración: Excepción detectada
         dato = re.sub(r'^\((\d{1,3})\) ', r'\1', dato)
-        print(f"Después de aplicar excepción: {dato}")  # Depuración: Después de aplicar excepción
-
+        
     dato_limpio = re.sub(r'\D', '', dato).strip()
-    print(f"Limpieza General: {dato_limpio}")  # Depuración: Después de limpieza general
-    
     if len(dato_limpio) == 10:
-        print(f"Válido: {dato_limpio}")  # Depuración: Número válido
         return dato_limpio
-    print("Inválido")  # Depuración: Número inválido
     return None
 
 # El resto del código se mantiene igual, incluidos otros funciones que procesan los chunks y el archivo
-
 def procesar_chunk(chunk, output, invalid_numbers_less_than_10, invalid_numbers_greater_than_10):
     fondos_planos = chunk.values.flatten().astype(str).tolist()
     for line in fondos_planos:
