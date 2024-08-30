@@ -6,7 +6,7 @@ import os
 from fpdf import FPDF
 import tempfile
 import numpy as np
-from limpieza_texto import limpiar_y_procesar_archivo
+from limpieza_texto import limpiar_y_validar  # Importar la función de validación de números desde el módulo
 from limpieza_email import limpiar_y_validar_correo  # Importar las funciones desde el módulo
 from contenido import mostrar_features, mostrar_como_usar  # Importar las nuevas funciones
 
@@ -44,12 +44,6 @@ def generar_pdf(dataframe):
         pdf.output(tmpfile.name)
 
     return tmpfile.name
-
-def limpiar_y_validar(dato):
-    dato_limpio = re.sub(r'\D', '', dato).strip()
-    if len(dato_limpio) == 10:
-        return dato_limpio
-    return None
 
 def process_chunk(chunk, output, tipo):
     fondos_planos = chunk.values.flatten().astype(str).tolist()
