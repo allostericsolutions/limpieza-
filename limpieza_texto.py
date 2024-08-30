@@ -3,14 +3,24 @@ import re
 import numpy as np
 
 def limpiar_y_validar(dato):
+    print(f"Original: {dato}")  # Depuración: Mostrar el dato original
+
     # Detectar y normalizar la excepción específica
     if re.match(r'^\(\d{1,3}\) ', dato):
+        print("Excepción detectada: Patrón (NNN) ")  # Depuración: Excepción detectada
         dato = re.sub(r'^\((\d{1,3})\) ', r'\1', dato)
-        
+        print(f"Después de aplicar excepción: {dato}")  # Depuración: Después de aplicar excepción
+
     dato_limpio = re.sub(r'\D', '', dato).strip()
+    print(f"Limpieza General: {dato_limpio}")  # Depuración: Después de limpieza general
+    
     if len(dato_limpio) == 10:
+        print(f"Válido: {dato_limpio}")  # Depuración: Número válido
         return dato_limpio
+    print("Inválido")  # Depuración: Número inválido
     return None
+
+# El resto del código se mantiene igual
 
 def procesar_chunk(chunk, output, invalid_numbers_less_than_10, invalid_numbers_greater_than_10):
     fondos_planos = chunk.values.flatten().astype(str).tolist()
@@ -45,20 +55,27 @@ def limpiar_y_procesar_archivo(uploaded_file, file_extension, chunk_size=10000):
                     invalid_numbers_less_than_10, invalid_numbers_greater_than_10 = procesar_chunk(
                         chunk, output, invalid_numbers_less_than_10, invalid_numbers_greater_than_10
                     )
-                break  # Salir del bucle si la codificación tiene éxito
+                break
             except UnicodeDecodeError:
-                continue  # Intentar con la siguiente codificación
+                continue
 
     elif file_extension in ["xls", "xlsx"]:
-        uploaded_file.seek(0)
-        reader = pd.read_excel(uploaded_file, None)
-        for sheet_name, sheet in reader.items():
-            num_chunks = max(1, len(sheet) // chunk_size)
-            for chunk_num, chunk in enumerate(np.array_split(sheet, num_chunks)):
-                total_numbers += chunk.size
-                invalid_numbers_less_than_10, invalid_numbers_greater_than_10 = procesar_chunk(
-                    chunk, output, invalid_numbers_less_than_10, invalid_numbers_greater_than_10
-                )
+        codificaciones = ['utf-8', 'latin1', 'cp1252']
+        for encoding in codificaciones:
+            try:
+                uploaded_file.seek(0)
+                engine = 'openpyxl' if file_extension == "xlsx" else 'xlrd'
+                reader = pd.read_excel(uploaded_file, None, engine=engine)
+                for sheet_name, sheet in reader.items():
+                    num_chunks = max(1, len(sheet) // chunk_size)
+                    for chunk_num, chunk in enumerate(np.array_split(sheet, num_chunks)):
+                        total_numbers += chunk.size
+                        invalid_numbers_less_than_10, invalid_numbers_greater_than_10 = procesar_chunk(
+                            chunk, output, invalid_numbers_less_than_10, invalid_numbers_greater_than_10
+                        )
+                break
+            except UnicodeDecodeError:
+                continue
 
     elif file_extension == "txt":
         codificaciones = ['utf-8', 'latin1', 'cp1252']
@@ -79,11 +96,11 @@ def limpiar_y_procesar_archivo(uploaded_file, file_extension, chunk_size=10000):
                             num_digits = len(re.sub(r'\D', '', number))
                             if num_digits < 10:
                                 invalid_numbers_less_than_10 += 1
-                            elif num_digits > 10:
+                            elif len(re.sub(r'\D', '', number)) > 10:
                                 invalid_numbers_greater_than_10 += 1
-                break  # Salir del bucle si la codificación tiene éxito
+                break
             except UnicodeDecodeError:
-                continue  # Intentar con la siguiente codificación
+                continue
 
     else:
         raise ValueError("Invalid file format. Please upload a CSV, Excel, or Text file.")
