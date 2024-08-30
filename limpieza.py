@@ -7,7 +7,7 @@ from fpdf import FPDF
 import tempfile
 import numpy as np
 from limpieza_texto import limpiar_y_procesar_archivo
-from limpieza_email import limpiar_y_validar_correo, validar_email  # Importar las funciones desde el módulo
+from limpieza_email import limpiar_y_validar_correo  # Importar las funciones desde el módulo
 from contenido import mostrar_features, mostrar_como_usar  # Importar las nuevas funciones
 
 def generar_pdf_reporte(dataframe, info_df):
@@ -15,7 +15,7 @@ def generar_pdf_reporte(dataframe, info_df):
     pdf.add_page()
     pdf.set_font("Arial", size=12)
     
-    pdf.cell(200, 10, txt="Phone Number Cleanup Report", ln=True, align='C')
+    pdf.cell(200, 10, txt="Data Cleanup Report", ln=True, align='C')
 
     for i, (desc, count) in dataframe.iterrows():
         pdf.cell(200, 10, txt=f"{desc}: {count}", ln=True, align='L')
@@ -71,14 +71,14 @@ def procesar_archivos(uploaded_files, tipo='telefonos'):
     output = set()  # Usamos un set para eliminar duplicados automáticamente
     total_items = 0
     invalid_items = 0
-    
+
     for uploaded_file in uploaded_files:
         file_extension = uploaded_file.name.split('.')[-1]
 
         try:
             if file_extension == "csv":
                 uploaded_file.seek(0)
-                reader = pd.read_csv(uploaded_file, chunksize=chunk_size, header=None)
+                reader = pd.read_csv(uploaded_file, chunksize=chunk_size, header=None, error_bad_lines=False)
                 for chunk in reader:
                     process_chunk(chunk, output, tipo)
 
@@ -87,7 +87,7 @@ def procesar_archivos(uploaded_files, tipo='telefonos'):
                 # Leer archivo línea por línea
                 for line in uploaded_file:
                     process_line(line.decode('utf-8'), output, tipo)
-                
+
             elif file_extension in ["xls", "xlsx"]:
                 reader = pd.read_excel(uploaded_file, None)
                 for sheet_name, sheet in reader.items():
@@ -96,8 +96,14 @@ def procesar_archivos(uploaded_files, tipo='telefonos'):
                         process_chunk(chunk, output, tipo)
         except Exception as e:
             st.error(f"Error processing file {uploaded_file.name}: {e}")
-    
+
     return output, invalid_items, total_items
+
+def download_txt(df):
+    buffer = BytesIO()
+    buffer.write('\n'.join(df['cleaned_data']).encode('utf-8'))
+    buffer.seek(0)
+    return buffer
 
 def main():
     st.title("Dr. Cleaner")
@@ -124,8 +130,8 @@ def main():
         st.write("Cleaned Data:")
         st.dataframe(df)
 
-        formato_salida = st.selectbox("Choose Your Fancy Output!", ["CSV", "Excel", "PDF"])
-        
+        formato_salida = st.selectbox("Choose Your Fancy Output!", ["CSV", "Excel", "PDF", "TXT"])
+
         if formato_salida == "CSV":
             buffer = BytesIO()
             df.to_csv(buffer, index=False, header=False)  # Exportar a CSV sin encabezado
@@ -156,12 +162,24 @@ def main():
                     mime='application/pdf'
                 )
             os.remove(pdf_file_path)
+        elif formato_salida == "TXT":
+            buffer = download_txt(df)
+            st.download_button(
+                label="Download Cleaned TXT",
+                data=buffer.getvalue(),
+                file_name='cleaned_data.txt',
+                mime='text/plain'
+            )
+
+        n_validos = len(output)
+        total_invalid_items = total_items - n_validos
+        n_duplicados_eliminados = max(0, total_items - n_validos - invalid_items)
 
         reporte = {
             f'Total {options.lower()} found in the file(s)': total_items,
-            f'Total valid {options.lower()} processed': len(output),
-            f'Total invalid {options.lower()}': invalid_items,
-            f'Total duplicate {options.lower()} removed': total_items - len(output) - invalid_items
+            f'Total valid {options.lower()} processed': n_validos,
+            f'Total invalid {options.lower()}': total_invalid_items,
+            f'Total duplicate {options.lower()} removed': n_duplicados_eliminados
         }
 
         reporte_df = pd.DataFrame(list(reporte.items()), columns=['Description', 'Count'])
