@@ -6,12 +6,7 @@ import os
 from fpdf import FPDF
 import tempfile
 import numpy as np
-
-def limpiar_y_validar(dato):
-    dato_limpio = re.sub(r'\D', '', dato).strip()
-    if len(dato_limpio) == 10:
-        return dato_limpio
-    return None
+from limpieza_texto import limpiar_y_procesar_archivo  # Importar la función desde el módulo
 
 def generar_pdf_reporte(dataframe, info_df):
     pdf = FPDF()
@@ -73,107 +68,25 @@ def main():
         2. **Download the cleaned file:**  After processing, you can download your cleaned phone number list in either:
             * **Excel (.xlsx)**
             * **PDF (.pdf)**
+            * **CSV (.csv)**
         3. **Enjoy the Magic**: Sit back and relax while our app works its magic. It's like having a personal assistant who loves cleaning up phone numbers!
         """)
 
     uploaded_file = st.file_uploader("Drop Your Junk Here", type=["csv", "xls", "xlsx", "txt"])
 
     if uploaded_file is not None:
-        data = []
         file_extension = uploaded_file.name.split('.')[-1]
 
-        # Leer archivos en Chunks y contar el número total de líneas para la barra de progreso
-        if file_extension in ["csv", "txt"]:
-            # Reiniciar el puntero del archivo después de contar las líneas
-            uploaded_file.seek(0)
-
-        chunk_size = 10000
-        total_numbers = 0
-        invalid_numbers_less_than_10 = 0
-        invalid_numbers_greater_than_10 = 0
-        output = set()
-
-        if file_extension == "csv":
-            try:
-                reader = pd.read_csv(uploaded_file, chunksize=chunk_size, header=None, encoding='utf-8')
-            except UnicodeDecodeError:
-                st.error("Error de decodificación con UTF-8. Intentando con latin1...")
-                uploaded_file.seek(0)  # Reiniciar el puntero del archivo
-                reader = pd.read_csv(uploaded_file, chunksize=chunk_size, header=None, encoding='latin1')
-                
-            for chunk_num, chunk in enumerate(reader):
-                total_numbers += chunk.size
-                fondos_planos = chunk.values.flatten().astype(str).tolist()
-                for line in fondos_planos:
-                    numbers = re.split(r'[,\s]+', line)
-                    for number in numbers:
-                        cleaned_number = limpiar_y_validar(number)
-                        if cleaned_number is not None:
-                            output.add(cleaned_number)
-                        else:
-                            if len(re.sub(r'\D', '', number)) < 10:
-                                invalid_numbers_less_than_10 += 1
-                            elif len(re.sub(r'\D', '', number)) > 10:
-                                invalid_numbers_greater_than_10 += 1
-                st.progress((chunk_num + 1) / (chunk_num + 2))  
-
-        elif file_extension in ["xls", "xlsx"]:
-            reader = pd.read_excel(uploaded_file, None)  
-            for sheet_name, sheet in reader.items():
-                num_chunks = max(1, len(sheet) // chunk_size)
-                for chunk_num, chunk in enumerate(np.array_split(sheet, num_chunks)):
-                    total_numbers += chunk.size
-                    fondos_planos = chunk.values.flatten().astype(str).tolist()
-                    for line in fondos_planos:
-                        numbers = re.split(r'[,\s]+', line)
-                        for number in numbers:
-                            cleaned_number = limpiar_y_validar(number)
-                            if cleaned_number is not None:
-                                output.add(cleaned_number)
-                            else:
-                                if len(re.sub(r'\D', '', number)) < 10:
-                                    invalid_numbers_less_than_10 += 1
-                                elif len(re.sub(r'\D', '', number)) > 10:
-                                    invalid_numbers_greater_than_10 += 1
-                    st.progress((chunk_num + 1) / (chunk_num + 2))
-
-        elif file_extension == "txt":
-            # Calcular el número total de líneas para la barra de progreso
-            total_lines = sum(1 for _ in uploaded_file)
-            uploaded_file.seek(0)  # Reiniciar el puntero del archivo
-
-            for i, line in enumerate(uploaded_file):
-                cleaned_line = line.decode("utf-8").strip()
-                numbers = re.split(r'[,\s]+', cleaned_line)
-                for number in numbers:
-                    total_numbers += 1
-                    cleaned_number = limpiar_y_validar(number)
-                    if cleaned_number:
-                        output.add(cleaned_number)
-                    else:
-                        if len(re.sub(r'\D', '', number)) < 10:
-                            invalid_numbers_less_than_10 += 1
-                        elif len(re.sub(r'\D', '', number)) > 10:
-                            invalid_numbers_greater_than_10 += 1
-
-                # Actualizar progreso cada chunk procesado
-                if (i + 1) % chunk_size == 0:
-                    progress = (i + 1) / total_lines
-                    st.progress(progress) 
-
-            st.progress(1.0)  # Progreso completado al 100%
-
-        else:
-            st.error("Invalid file format. Please upload a CSV, Excel, or Text file.")
-            return
+        # Llamar la función de limpieza y procesamiento
+        resultado = limpiar_y_procesar_archivo(uploaded_file, file_extension)
 
         df = pd.DataFrame()
-        df["cleaned_numbers"] = list(output)
+        df["cleaned_numbers"] = resultado["cleaned_numbers"]
 
         st.write("Cleaned Data:")
         st.dataframe(df)
 
-        formato_salida = st.selectbox("Choose Your Fancy Output!", ["Excel", "PDF"])
+        formato_salida = st.selectbox("Choose Your Fancy Output!", ["Excel", "PDF", "CSV"])
 
         if formato_salida == "Excel":
             buffer = BytesIO()
@@ -198,14 +111,28 @@ def main():
                 )
             os.remove(pdf_file_path)
 
-        n_validos = len(output)
-        n_duplicados_eliminados = total_numbers - (n_validos + invalid_numbers_less_than_10 + invalid_numbers_greater_than_10)
+        elif formato_salida == "CSV":
+            buffer = BytesIO()
+            df.to_csv(buffer, index=False)
+            buffer.seek(0)
+
+            st.download_button(
+                label="Download Cleaned CSV",
+                data=buffer.getvalue(),
+                file_name='cleaned_numbers.csv',
+                mime='text/csv'
+            )
+
+        n_validos = len(resultado["cleaned_numbers"])
+        n_duplicados_eliminados = resultado["total_numbers"] - (
+            n_validos + resultado["invalid_numbers_less_than_10"] + resultado["invalid_numbers_greater_than_10"]
+        )
 
         reporte = {
-            'Total numbers found in the file': total_numbers,
+            'Total numbers found in the file': resultado["total_numbers"],
             'Total valid numbers processed (exactly 10 digits)': n_validos,
-            'Total disqualified numbers (less than 10 digits)': invalid_numbers_less_than_10,
-            'Total disqualified numbers (more than 10 digits)': invalid_numbers_greater_than_10,
+            'Total disqualified numbers (less than 10 digits)': resultado["invalid_numbers_less_than_10"],
+            'Total disqualified numbers (more than 10 digits)': resultado["invalid_numbers_greater_than_10"],
             'Total duplicate numbers removed': n_duplicados_eliminados
         }
 
