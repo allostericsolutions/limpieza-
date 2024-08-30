@@ -6,7 +6,7 @@ import os
 from fpdf import FPDF
 import tempfile
 import numpy as np
-from limpieza_texto import limpiar_y_validar  # Importar la función de validación de números desde el módulo
+from limpieza_texto import limpiar_y_validar  # Importar la función de validación de números de teléfono
 from limpieza_email import limpiar_y_validar_correo  # Importar las funciones desde el módulo
 from contenido import mostrar_features, mostrar_como_usar  # Importar las nuevas funciones
 
@@ -93,6 +93,9 @@ def procesar_archivos(uploaded_files, tipo='telefonos'):
         except Exception as e:
             continue  # Ignorar cualquier otro error inesperado
 
+    total_items = sum(1 for _ in output)
+    invalid_items = total_items - len(output)
+    
     return output, invalid_items, total_items
 
 def download_txt(df):
