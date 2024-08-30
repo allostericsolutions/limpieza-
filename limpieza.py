@@ -61,28 +61,42 @@ def main():
 
     with st.expander("How to Use"):
         st.markdown("""
-        1. **Upload your file:**  You can upload your phone number list in the following formats:
+        1. **Upload your file:** You can upload multiple files in the following formats:
             * **CSV (.csv)**
             * **Excel (.xls, .xlsx)**
             * **Text (.txt)** (Make sure each phone number is on a separate line)
-        2. **Download the cleaned file:**  After processing, you can download your cleaned phone number list in either:
+        2. **Download the cleaned file:** After processing, you can download your cleaned phone number list in either:
             * **Excel (.xlsx)**
             * **PDF (.pdf)**
             * **CSV (.csv)**
         3. **Enjoy the Magic**: Sit back and relax while our app works its magic. It's like having a personal assistant who loves cleaning up phone numbers!
         """)
 
-    uploaded_file = st.file_uploader("Drop Your Junk Here", type=["csv", "xls", "xlsx", "txt"])
+    uploaded_files = st.file_uploader("Drop Your Junk Here", type=["csv", "xls", "xlsx", "txt"], accept_multiple_files=True)
 
-    if uploaded_file is not None:
-        file_extension = uploaded_file.name.split('.')[-1]
+    if uploaded_files is not None:
+        total_data = []
+        total_numbers = 0
+        invalid_numbers_less_than_10 = 0
+        invalid_numbers_greater_than_10 = 0
+        output = set()
 
-        # Llamar la función de limpieza y procesamiento
-        resultado = limpiar_y_procesar_archivo(uploaded_file, file_extension)
+        for uploaded_file in uploaded_files:
+            file_extension = uploaded_file.name.split('.')[-1]
+
+            # Llamar la función de limpieza y procesamiento para cada archivo
+            resultado = limpiar_y_procesar_archivo(uploaded_file, file_extension)
+
+            total_data.extend(resultado["cleaned_numbers"])
+            total_numbers += resultado["total_numbers"]
+            invalid_numbers_less_than_10 += resultado["invalid_numbers_less_than_10"]
+            invalid_numbers_greater_than_10 += resultado["invalid_numbers_greater_than_10"]
+
+            output.update(resultado["cleaned_numbers"])
 
         df = pd.DataFrame()
-        df["cleaned_numbers"] = resultado["cleaned_numbers"]
-
+        df["cleaned_numbers"] = list(output)
+        
         st.write("Cleaned Data:")
         st.dataframe(df)
 
@@ -123,16 +137,16 @@ def main():
                 mime='text/csv'
             )
 
-        n_validos = len(resultado["cleaned_numbers"])
-        n_duplicados_eliminados = resultado["total_numbers"] - (
-            n_validos + resultado["invalid_numbers_less_than_10"] + resultado["invalid_numbers_greater_than_10"]
+        n_validos = len(output)
+        n_duplicados_eliminados = total_numbers - (
+            n_validos + invalid_numbers_less_than_10 + invalid_numbers_greater_than_10
         )
 
         reporte = {
-            'Total numbers found in the file': resultado["total_numbers"],
+            'Total numbers found in the file(s)': total_numbers,
             'Total valid numbers processed (exactly 10 digits)': n_validos,
-            'Total disqualified numbers (less than 10 digits)': resultado["invalid_numbers_less_than_10"],
-            'Total disqualified numbers (more than 10 digits)': resultado["invalid_numbers_greater_than_10"],
+            'Total disqualified numbers (less than 10 digits)': invalid_numbers_less_than_10,
+            'Total disqualified numbers (more than 10 digits)': invalid_numbers_greater_than_10,
             'Total duplicate numbers removed': n_duplicados_eliminados
         }
 
