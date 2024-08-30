@@ -56,10 +56,15 @@ def limpiar_y_procesar_archivo(uploaded_file, file_extension, chunk_size=10000):
                 elif file_extension == "txt":
                     reader = (line.decode(encoding).strip() for line in uploaded_file)
                 for chunk_num, chunk in enumerate(reader):
-                    total_numbers += chunk.size if file_extension == "csv" else 1
-                    chunk_df = pd.DataFrame([chunk]) if file_extension == "txt" else chunk
-                    invalid_numbers_less_than_10, invalid_numbers_greater_than_10 = procesar_chunk(
-                        chunk_df, output, invalid_numbers_less_than_10, invalid_numbers_greater_than_10)
+                    if file_extension == "csv":
+                        total_numbers += chunk.shape[0]
+                        invalid_numbers_less_than_10, invalid_numbers_greater_than_10 = procesar_chunk(
+                            chunk, output, invalid_numbers_less_than_10, invalid_numbers_greater_than_10)
+                    else:
+                        total_numbers += 1
+                        chunk_df = pd.DataFrame([chunk])
+                        invalid_numbers_less_than_10, invalid_numbers_greater_than_10 = procesar_chunk(
+                            chunk_df, output, invalid_numbers_less_than_10, invalid_numbers_greater_than_10)
                 break
             except UnicodeDecodeError:
                 continue
