@@ -1,4 +1,4 @@
-import streamlit as st
+mport streamlit as st
 import pandas as pd
 import re
 from io import BytesIO
@@ -78,7 +78,7 @@ def procesar_archivos(uploaded_files, tipo='telefonos'):
         try:
             if file_extension == "csv":
                 uploaded_file.seek(0)
-                for chunk in pd.read_csv(uploaded_file, chunksize=chunk_size, header=None, error_bad_lines=False):
+                for chunk in pd.read_csv(uploaded_file, chunksize=chunk_size, header=None, error_bad_lines=False, quoting=3):  # quoting=3 para ignorar comillas
                     process_chunk(chunk, output, tipo)
 
             elif file_extension == "txt":
