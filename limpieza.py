@@ -94,7 +94,13 @@ def main():
         output = set()
 
         if file_extension == "csv":
-            reader = pd.read_csv(uploaded_file, chunksize=chunk_size, header=None)
+            try:
+                reader = pd.read_csv(uploaded_file, chunksize=chunk_size, header=None, encoding='utf-8')
+            except UnicodeDecodeError:
+                st.error("Error de decodificación con UTF-8. Intentando con latin1...")
+                uploaded_file.seek(0)  # Reiniciar el puntero del archivo
+                reader = pd.read_csv(uploaded_file, chunksize=chunk_size, header=None, encoding='latin1')
+                
             for chunk_num, chunk in enumerate(reader):
                 total_numbers += chunk.size
                 fondos_planos = chunk.values.flatten().astype(str).tolist()
@@ -155,7 +161,7 @@ def main():
                     progress = (i + 1) / total_lines
                     st.progress(progress) 
 
-            st.progress(1.0) 
+            st.progress(1.0)  # Progreso completado al 100%
 
         else:
             st.error("Invalid file format. Please upload a CSV, Excel, or Text file.")
