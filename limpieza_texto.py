@@ -2,6 +2,7 @@ import pandas as pd
 import re
 import numpy as np
 
+# Función modificada para incluir depuración
 def limpiar_y_validar(dato):
     print(f"Original: {dato}")  # Depuración: Mostrar el dato original
 
@@ -20,7 +21,7 @@ def limpiar_y_validar(dato):
     print("Inválido")  # Depuración: Número inválido
     return None
 
-# El resto del código se mantiene igual
+# El resto del código se mantiene igual, incluidos otros funciones que procesan los chunks y el archivo
 
 def procesar_chunk(chunk, output, invalid_numbers_less_than_10, invalid_numbers_greater_than_10):
     fondos_planos = chunk.values.flatten().astype(str).tolist()
@@ -55,7 +56,7 @@ def limpiar_y_procesar_archivo(uploaded_file, file_extension, chunk_size=10000):
                     invalid_numbers_less_than_10, invalid_numbers_greater_than_10 = procesar_chunk(
                         chunk, output, invalid_numbers_less_than_10, invalid_numbers_greater_than_10
                     )
-                break
+                break  # Salir del bucle si la codificación tiene éxito
             except UnicodeDecodeError:
                 continue
 
@@ -73,7 +74,7 @@ def limpiar_y_procesar_archivo(uploaded_file, file_extension, chunk_size=10000):
                         invalid_numbers_less_than_10, invalid_numbers_greater_than_10 = procesar_chunk(
                             chunk, output, invalid_numbers_less_than_10, invalid_numbers_greater_than_10
                         )
-                break
+                break  # Salir del bucle si la codificación tiene éxito
             except UnicodeDecodeError:
                 continue
 
@@ -96,9 +97,9 @@ def limpiar_y_procesar_archivo(uploaded_file, file_extension, chunk_size=10000):
                             num_digits = len(re.sub(r'\D', '', number))
                             if num_digits < 10:
                                 invalid_numbers_less_than_10 += 1
-                            elif len(re.sub(r'\D', '', number)) > 10:
+                            elif num_digits > 10:
                                 invalid_numbers_greater_than_10 += 1
-                break
+                break  # Salir del bucle si la codificación tiene éxito
             except UnicodeDecodeError:
                 continue
 
