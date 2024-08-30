@@ -33,7 +33,7 @@ def generar_pdf(dataframe):
     pdf.add_page()
     pdf.set_font("Arial", size=12)
 
-    pdf.cell(200, 10, txt="Cleaned Phone Numbers", ln=True, align='C')
+    pdf.cell(200, 10, txt="Cleaned Phone Numbers", ln=True,	align='C')
 
     for index, row in dataframe.iterrows():
         pdf.cell(200, 10, txt=row['cleaned_numbers'], ln=True, align='C')
