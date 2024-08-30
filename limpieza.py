@@ -7,7 +7,7 @@ from fpdf import FPDF
 import tempfile
 import numpy as np
 from limpieza_texto import limpiar_y_procesar_archivo
-from limpieza_email import limpiar_y_validar_correo  # Importar la función desde el módulo
+from limpieza_email import limpiar_y_validar_correo, validar_email  # Importar las funciones desde el módulo
 from contenido import mostrar_features, mostrar_como_usar  # Importar las nuevas funciones
 
 def generar_pdf_reporte(dataframe, info_df):
@@ -45,6 +45,12 @@ def generar_pdf(dataframe):
 
     return tmpfile.name
 
+def limpiar_y_validar(dato):
+    dato_limpio = re.sub(r'\D', '', dato).strip()
+    if len(dato_limpio) == 10:
+        return dato_limpio
+    return None
+
 def process_chunk(chunk, output, tipo):
     fondos_planos = chunk.values.flatten().astype(str).tolist()
     for line in fondos_planos:
@@ -59,7 +65,40 @@ def process_line(line, output, tipo):
             cleaned_dato = limpiar_y_validar(dato)
         if cleaned_dato is not None:
             output.add(cleaned_dato)
-            
+
+def procesar_archivos(uploaded_files, tipo='telefonos'):
+    chunk_size = 10000  # Tamaño de los chunks
+    output = set()  # Usamos un set para eliminar duplicados automáticamente
+    total_items = 0
+    invalid_items = 0
+    
+    for uploaded_file in uploaded_files:
+        file_extension = uploaded_file.name.split('.')[-1]
+
+        try:
+            if file_extension == "csv":
+                uploaded_file.seek(0)
+                reader = pd.read_csv(uploaded_file, chunksize=chunk_size, header=None)
+                for chunk in reader:
+                    process_chunk(chunk, output, tipo)
+
+            elif file_extension == "txt":
+                uploaded_file.seek(0)
+                # Leer archivo línea por línea
+                for line in uploaded_file:
+                    process_line(line.decode('utf-8'), output, tipo)
+                
+            elif file_extension in ["xls", "xlsx"]:
+                reader = pd.read_excel(uploaded_file, None)
+                for sheet_name, sheet in reader.items():
+                    num_chunks = max(1, len(sheet) // chunk_size)
+                    for chunk in np.array_split(sheet, num_chunks):
+                        process_chunk(chunk, output, tipo)
+        except Exception as e:
+            st.error(f"Error processing file {uploaded_file.name}: {e}")
+    
+    return output, invalid_items, total_items
+
 def main():
     st.title("Dr. Cleaner")
 
@@ -72,9 +111,8 @@ def main():
     mostrar_features()
     mostrar_como_usar()
 
-    options = st.radio(
-        "Select Data Type:",
-        ('Phone Numbers', 'Emails'))
+    # Selección del tipo de análisis
+    options = st.radio("Select Data Type:", ('Phone Numbers', 'Emails'))
 
     uploaded_files = st.file_uploader("Drop Your Junk Here", type=["csv", "xls", "xlsx", "txt"], accept_multiple_files=True)
 
@@ -89,7 +127,9 @@ def main():
         formato_salida = st.selectbox("Choose Your Fancy Output!", ["CSV", "Excel", "PDF"])
         
         if formato_salida == "CSV":
-            buffer = download_csv(df)
+            buffer = BytesIO()
+            df.to_csv(buffer, index=False, header=False)  # Exportar a CSV sin encabezado
+            buffer.seek(0)
             st.download_button(
                 label="Grab your things here",
                 data=buffer.getvalue(),
@@ -97,14 +137,15 @@ def main():
                 mime='text/csv'
             )
         elif formato_salida == "Excel":
-            buffer = download_excel(df)
-            if buffer:
-                st.download_button(
-                    label="Grab your things here",
-                    data=buffer.getvalue(),
-                    file_name='cleaned_data.xlsx',
-                    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                )
+            buffer = BytesIO()
+            df.to_excel(buffer, index=False, header=False)  # Exportar a Excel sin encabezado
+            buffer.seek(0)
+            st.download_button(
+                label="Grab your things here",
+                data=buffer.getvalue(),
+                file_name='cleaned_data.xlsx',
+                mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
         elif formato_salida == "PDF":
             pdf_file_path = generar_pdf(df)
             with open(pdf_file_path, "rb") as pdf_file:
@@ -117,10 +158,10 @@ def main():
             os.remove(pdf_file_path)
 
         reporte = {
-            'Total items found in the file': total_items,
-            'Total valid items processed': len(output),
-            'Total invalid items': invalid_items,
-            'Total duplicate items removed': total_items - len(output) - invalid_items
+            f'Total {options.lower()} found in the file(s)': total_items,
+            f'Total valid {options.lower()} processed': len(output),
+            f'Total invalid {options.lower()}': invalid_items,
+            f'Total duplicate {options.lower()} removed': total_items - len(output) - invalid_items
         }
 
         reporte_df = pd.DataFrame(list(reporte.items()), columns=['Description', 'Count'])
