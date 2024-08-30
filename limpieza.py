@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import re
@@ -6,41 +7,38 @@ import os
 from fpdf import FPDF
 import tempfile
 import numpy as np
-from limpieza_texto import limpiar_y_procesar_archivo  # Importar la función de limpieza desde el módulo
+
+# Funciones existentes para la limpieza y manejo de números de teléfono
+def limpiar_y_validar(dato):
+    dato_limpio = re.sub(r'\D', '', dato).strip()
+    if len(dato_limpio) == 10:
+        return dato_limpio
+    return None
 
 def generar_pdf_reporte(dataframe, info_df):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
-    
     pdf.cell(200, 10, txt="Phone Number Cleanup Report", ln=True, align='C')
-
     for i, (desc, count) in dataframe.iterrows():
         pdf.cell(200, 10, txt=f"{desc}: {count}", ln=True, align='L')
-    
     pdf.add_page()
     pdf.cell(200, 10, txt="Analysis Information", ln=True, align='C')
     for info in info_df['Analysis']:
         pdf.cell(200, 10, txt=info, ln=True, align='L')
-
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmpfile:
         pdf.output(tmpfile.name)
-
     return tmpfile.name
 
 def generar_pdf(dataframe):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
-
     pdf.cell(200, 10, txt="Cleaned Phone Numbers", ln=True, align='C')
-
     for index, row in dataframe.iterrows():
-        pdf.cell(200, 10, txt=row['cleaned_numbers'], ln=True, align='C')
-
+        pdf.cell(200, 10, txt=row['cleaned_data'], ln=True, align='C')
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmpfile:
         pdf.output(tmpfile.name)
-
     return tmpfile.name
 
 # Nueva función para correos electrónicos
@@ -54,96 +52,151 @@ def limpiar_y_validar_correo(dato):
         return dato
     return None
 
+# Variables globales para mantener seguimiento de los totales
+total_items = 0
+invalid_items = 0
+
+# Procesamiento de archivos masivos
+def procesar_archivos(uploaded_files, tipo='telefonos'):
+    global total_items, invalid_items
+
+    chunk_size = 10000  # Tamaño de los chunks
+    output = set()  # Usamos un set para eliminar duplicados automáticamente
+    total_items = 0
+    invalid_items = 0
+    
+    for uploaded_file in uploaded_files:
+        file_extension = uploaded_file.name.split('.')[-1]
+
+        try:
+            if file_extension == "csv":
+                uploaded_file.seek(0)
+                reader = pd.read_csv(uploaded_file, chunksize=chunk_size, header=None)
+                for chunk in reader:
+                    process_chunk(chunk, output, tipo)
+                    
+            elif file_extension == "txt":
+                uploaded_file.seek(0)
+                # Leer archivo línea por línea
+                for line in uploaded_file:
+                    process_line(line.decode('utf-8'), output, tipo)
+                
+            elif file_extension in ["xls", "xlsx"]:
+                reader = pd.read_excel(uploaded_file, sheet_name=None)
+                for sheet_name, sheet in reader.items():
+                    num_chunks = max(1, len(sheet) // chunk_size)
+                    for chunk in np.array_split(sheet, num_chunks):
+                        process_chunk(chunk, output, tipo)
+        except Exception as e:
+            st.error(f"Error processing file {uploaded_file.name}: {e}")
+    
+    return output, invalid_items, total_items
+
+def process_chunk(chunk, output, tipo):
+    global total_items, invalid_items
+    fondos_planos = chunk.values.flatten().astype(str).tolist()
+    for line in fondos_planos:
+        process_line(line, output, tipo)
+
+def process_line(line, output, tipo):
+    global total_items, invalid_items
+    datos = re.split(r'[,\s]+', line.strip())
+    for dato in datos:
+        total_items += 1
+        if tipo == 'emails':
+            cleaned_dato = limpiar_y_validar_correo(dato)
+        else:
+            cleaned_dato = limpiar_y_validar(dato)
+        if cleaned_dato is not None:
+            output.add(cleaned_dato)
+        else:
+            invalid_items += 1
+
+def download_excel(df):
+    MAX_ROWS = 1048576  # Máximo número de filas permitido por hoja en Excel
+    buffer = BytesIO()
+    try:
+        with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+            for i in range(0, len(df), MAX_ROWS):
+                df.iloc[i:i + MAX_ROWS].to_excel(writer, sheet_name=f'Sheet{i//MAX_ROWS + 1}', index=False, header=False) 
+        buffer.seek(0)
+        return buffer
+    except Exception as e:
+        st.error(f"Error exporting to Excel: {e}")
+        return None
+
+def download_csv(df):
+    buffer = BytesIO()
+    df.to_csv(buffer, index=False, header=False)  # Asegúrate de que header=False está aquí
+    buffer.seek(0)
+    return buffer
+
 def main():
     st.title("Dr. Cleaner")
-
     st.image("https://i.imgur.com/LzPcPIk.png", caption='Allosteric Solutions', width=360)
-
     st.markdown("[Visit our website](https://www.allostericsolutions.com)")
     st.markdown("Contact: [franciscocuriel@allostericsolutions.com](mailto:franciscocuriel@allostericsolutions.com)")
 
     with st.expander("Features"):
         st.markdown("""
-        1. Removes duplicate numbers
-        2. Filters out numbers with more or less than 10 digits
-        3. Eliminates non-numeric characters
-        4. **Makes your phone number list sparkle**: Because who doesn't love a clean and shiny phone number list?
+        1. Removes duplicate numbers and emails
+        2. Filters out invalid phone numbers and emails
+        3. Eliminates non-numeric characters in phone numbers
+        4. **Makes your lists sparkle**
         """)
 
-    with st.expander("How to Use"):
-        st.markdown("""
-        1. **Upload your file:**  You can upload your phone number list in the following formats:
-            * **CSV (.csv)**
-            * **Excel (.xls, .xlsx)**
-            * **Text (.txt)** (Make sure each phone number is on a separate line)
-        2. **Download the cleaned file:**  After processing, you can download your cleaned phone number list in either:
-            * **Excel (.xlsx)**
-            * **PDF (.pdf)**
-            * **CSV (.csv)**
-        3. **Enjoy the Magic**: Sit back and relax while our app works its magic. It's like having a personal assistant who loves cleaning up phone numbers!
-        """)
+    options = st.radio(
+        "Select Data Type:",
+        ('Phone Numbers', 'Emails'))
 
-    uploaded_file = st.file_uploader("Drop Your Junk Here", type=["csv", "xls", "xlsx", "txt"])
+    uploaded_files = st.file_uploader("Drop Your Junk Here", type=["csv", "xls", "xlsx", "txt"], accept_multiple_files=True)
+    
+    if uploaded_files:
+        tipo = 'emails' if options == 'Emails' else 'telefonos'
+        output, invalid_items, total_items = procesar_archivos(uploaded_files, tipo)
 
-    if uploaded_file is not None:
-        file_extension = uploaded_file.name.split('.')[-1]
-
-        # Llama a la función para limpiar y procesar el archivo
-        resultado = limpiar_y_procesar_archivo(uploaded_file, file_extension)
-
-        df = pd.DataFrame()
-        df["cleaned_numbers"] = resultado["cleaned_numbers"]
-
+        df = pd.DataFrame({'cleaned_data': list(output)})
         st.write("Cleaned Data:")
         st.dataframe(df)
 
-        formato_salida = st.selectbox("Choose Your Fancy Output!", ["Excel", "PDF", "CSV"])
-
-        if formato_salida == "Excel":
-            buffer = BytesIO()
-            df.to_excel(buffer, index=False)
-            buffer.seek(0)
-
+        formato_salida = st.selectbox("Choose Your Fancy Output!", ["CSV", "Excel", "PDF"])
+        
+        if formato_salida == "CSV":
+            buffer = download_csv(df)
             st.download_button(
                 label="Grab your things here",
                 data=buffer.getvalue(),
-                file_name='cleaned_numbers.xlsx',
-                mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                file_name='cleaned_data.csv',
+                mime='text/csv'
             )
-
+        elif formato_salida == "Excel":
+            buffer = download_excel(df)
+            if buffer:
+                st.download_button(
+                    label="Grab your things here",
+                    data=buffer.getvalue(),
+                    file_name='cleaned_data.xlsx',
+                    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                )
         elif formato_salida == "PDF":
             pdf_file_path = generar_pdf(df)
             with open(pdf_file_path, "rb") as pdf_file:
                 st.download_button(
                     label="Download Cleaned PDF",
                     data=pdf_file,
-                    file_name='cleaned_numbers.pdf',
+                    file_name='cleaned_data.pdf',
                     mime='application/pdf'
                 )
             os.remove(pdf_file_path)
 
-        elif formato_salida == "CSV":
-            csv = df.to_csv(index=False).encode('utf-8')
-            st.download_button(
-                label="Download Cleaned CSV",
-                data=csv,
-                file_name='cleaned_numbers.csv',
-                mime='text/csv'
-            )
-
-        n_validos = len(resultado["cleaned_numbers"])
-        n_duplicados_eliminados = resultado["total_numbers"] - (n_validos + resultado["invalid_numbers_less_than_10"] + resultado["invalid_numbers_greater_than_10"])
-
         reporte = {
-            'Total numbers found in the file': resultado["total_numbers"],
-            'Total valid numbers processed (exactly 10 digits)': n_validos,
-            'Total disqualified numbers (less than 10 digits)': resultado["invalid_numbers_less_than_10"],
-            'Total disqualified numbers (more than 10 digits)': resultado["invalid_numbers_greater_than_10"],
-            'Total duplicate numbers removed': n_duplicados_eliminados
+            'Total items found in the file': total_items,
+            'Total valid items processed': len(output),
+            'Total invalid items': invalid_items,
+            'Total duplicate items removed': total_items - len(output) - invalid_items
         }
 
         reporte_df = pd.DataFrame(list(reporte.items()), columns=['Description', 'Count'])
-
         info_df = pd.DataFrame({
             'Analysis': ['Analyzed by Allosteric Solutions', 'www.allostericsolutions.com', 'franciscocuriel@allostericsolutions.com']
         })
@@ -155,18 +208,19 @@ def main():
 
         if formato_reporte == "Excel":
             reporte_file = 'report.xlsx'
-            with pd.ExcelWriter(reporte_file) as writer:
-                reporte_df.to_excel(writer, sheet_name='Summary', index=False)
-                info_df.to_excel(writer, sheet_name='Analysis Info', index=False)
-
-            with open(reporte_file, "rb") as report_file:
-                st.download_button(
-                    label="Retrieve Your Report Here, Hurry Up man!",
-                    data=report_file,
-                    file_name='report.xlsx',
-                    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                )
-
+            try:
+                with pd.ExcelWriter(reporte_file, engine='xlsxwriter') as writer:
+                    reporte_df.to_excel(writer, sheet_name='Summary', index=False)
+                    info_df.to_excel(writer, sheet_name='Analysis Info', index=False)
+                with open(reporte_file, "rb") as report_file:
+                    st.download_button(
+                        label="Retrieve Your Report Here",
+                        data=report_file,
+                        file_name='report.xlsx',
+                        mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                    )
+            except Exception as e:
+                st.error(f"Error exporting report to Excel: {e}")
         elif formato_reporte == "PDF":
             pdf_report_file_path = generar_pdf_reporte(reporte_df, info_df)
             with open(pdf_report_file_path, "rb") as pdf_report_file:
