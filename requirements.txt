@@ -4,3 +4,4 @@ numpy
 fpdf
 openpyxl
 xlsxwriter
+xlrd
