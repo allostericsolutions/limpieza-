@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import re
@@ -56,13 +55,6 @@ def limpiar_y_validar_correo(dato):
 total_items = 0
 invalid_items = 0
 
-def leer_csv_limpio(file):
-    try:
-        df = pd.read_csv(file, header=None)
-        return df
-    except pd.errors.ParserError:
-        return None
-
 # Procesamiento de archivos masivos
 def procesar_archivos(uploaded_files, tipo='telefonos'):
     global total_items, invalid_items
@@ -78,11 +70,9 @@ def procesar_archivos(uploaded_files, tipo='telefonos'):
         try:
             if file_extension == "csv":
                 uploaded_file.seek(0)
-                cleaned_lines = leer_csv_limpio(uploaded_file)
-                if cleaned_lines is not None:
-                    reader = pd.read_csv(BytesIO(cleaned_lines), chunksize=chunk_size, header=None)
-                    for chunk in reader:
-                        process_chunk(chunk, output, tipo)
+                reader = pd.read_csv(uploaded_file, chunksize=chunk_size, header=None)
+                for chunk in reader:
+                    process_chunk(chunk, output, tipo)
                     
             elif file_extension == "txt":
                 uploaded_file.seek(0)
@@ -91,7 +81,7 @@ def procesar_archivos(uploaded_files, tipo='telefonos'):
                     process_line(line.decode('utf-8'), output, tipo)
                 
             elif file_extension in ["xls", "xlsx"]:
-                reader = pd.read_excel(uploaded_file, None)
+                reader = pd.read_excel(uploaded_file, sheet_name=None)
                 for sheet_name, sheet in reader.items():
                     num_chunks = max(1, len(sheet) // chunk_size)
                     for chunk in np.array_split(sheet, num_chunks):
