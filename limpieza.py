@@ -163,7 +163,7 @@ def main():
         if options == 'Bear Trap':
             st.write("You've triggered the bear trap! 🪤")
             st.markdown(
-                f'<iframe src="https://giphy.com/embed/5b0kImM7p9fZzc361N" width="480" height="480" style="" frameBorder="0" class="giphy-embed" allowFullScreen></iframe><p><a href="https://giphy.com/gifs/cartoon-network-emea-crisis-videojuegos-enganchado-5b0kImM7p9fZzc361N">via GIPHY</a></p>',
+                f'<iframe src="out-0 (1).png" style="" frameBorder="0" class="giphy-embed" allowFullScreen></iframe><p><a href="https://giphy.com/gifs/cartoon-network-emea-crisis-videojuegos-enganchado-5b0kImM7p9fZzc361N">via GIPHY</a></p>',
                 unsafe_allow_html=True
             )
         else:
