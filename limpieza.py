@@ -162,10 +162,7 @@ def main():
             tipo = 'codigos_postales'
         if options == 'Bear Trap':
             st.write("You've triggered the bear trap! 🪤")
-            st.markdown(
-                f'<iframe src="out-0 (1).png" style="" frameBorder="0" class="giphy-embed" allowFullScreen></iframe><p><a href="https://giphy.com/gifs/cartoon-network-emea-crisis-videojuegos-enganchado-5b0kImM7p9fZzc361N">via GIPHY</a></p>',
-                unsafe_allow_html=True
-            )
+            st.image("out-0 (1).png", width=360)  # Usar imagen out-0 (1).png aquí
         else:
             output, invalid_items, total_items = procesar_archivos(uploaded_files, tipo)
 
