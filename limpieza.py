@@ -135,7 +135,11 @@ def download_csv(df):
     return buffer
 
 def main():
-    st.title("Dr. Cleaner")
+    st.title("BearCare")
+    
+    with st.header():
+        st.image("out-0.png", width=50)  # La ruta de la imagen
+        st.subheader("BearCare")
 
     with st.sidebar:
         st.image("https://i.imgur.com/LzPcPIk.png", caption='Allosteric Solutions', width=360)
