@@ -105,6 +105,8 @@ def process_line(line, output, tipo):
         total_items += 1
         if tipo == 'emails':
             cleaned_dato = limpiar_y_validar_correo(dato)
+        elif tipo == 'codigos_postales':
+            cleaned_dato = limpiar_codigo_postal(dato) # LLamando a la función de limpieza
         else:
             cleaned_dato = limpiar_y_validar(dato)
         if cleaned_dato is not None:
@@ -149,12 +151,14 @@ def main():
 
     options = st.radio(
         "Select Data Type:",
-        ('Phone Numbers', 'Emails'))
+        ('Phone Numbers', 'Emails', 'Postal Codes'))  # Agrega 'Postal Codes'
 
     uploaded_files = st.file_uploader("Drop Your Junk Here", type=["csv", "xls", "xlsx", "txt"], accept_multiple_files=True)
     
     if uploaded_files:
         tipo = 'emails' if options == 'Emails' else 'telefonos'
+        if options == 'Postal Codes':
+            tipo = 'codigos_postales'
         output, invalid_items, total_items = procesar_archivos(uploaded_files, tipo)
 
         df = pd.DataFrame({'cleaned_data': list(output)})
