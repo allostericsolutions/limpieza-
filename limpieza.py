@@ -6,6 +6,8 @@ import os
 from fpdf import FPDF
 import tempfile
 import numpy as np
+from codigo_postal_rules import limpiar_codigo_postal  # Importa la función
+
 
 # Funciones existentes para la limpieza y manejo de números de teléfono
 def limpiar_y_validar(dato):
