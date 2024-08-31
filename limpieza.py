@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import re
@@ -71,7 +70,8 @@ def procesar_archivos(uploaded_files, tipo='telefonos'):
         try:
             if file_extension == "csv":
                 uploaded_file.seek(0)
-                reader = pd.read_csv(uploaded_file, chunksize=chunk_size, header=None)
+                # **Aquí se agrega on_bad_lines='skip' para omitir las líneas con errores**
+                reader = pd.read_csv(uploaded_file, chunksize=chunk_size, header=None, on_bad_lines='skip')
                 for chunk in reader:
                     process_chunk(chunk, output, tipo)
                     
