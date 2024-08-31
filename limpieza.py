@@ -133,17 +133,19 @@ def download_csv(df):
 
 def main():
     st.title("Dr. Cleaner")
-    st.image("https://i.imgur.com/LzPcPIk.png", caption='Allosteric Solutions', width=360)
-    st.markdown("[Visit our website](https://www.allostericsolutions.com)")
-    st.markdown("Contact: [franciscocuriel@allostericsolutions.com](mailto:franciscocuriel@allostericsolutions.com)")
 
-    with st.expander("Features"):
-        st.markdown("""
-        1. Removes duplicate numbers and emails
-        2. Filters out invalid phone numbers and emails
-        3. Eliminates non-numeric characters in phone numbers
-        4. **Makes your lists sparkle**
-        """)
+    with st.sidebar:
+        st.image("https://i.imgur.com/LzPcPIk.png", caption='Allosteric Solutions', width=360)
+        st.markdown("[Visit our website](https://www.allostericsolutions.com)")
+        st.markdown("Contact: [franciscocuriel@allostericsolutions.com](mailto:franciscocuriel@allostericsolutions.com)")
+
+        with st.expander("Features"):
+            st.markdown("""
+            1. Removes duplicate numbers and emails
+            2. Filters out invalid phone numbers and emails
+            3. Eliminates non-numeric characters in phone numbers
+            4. **Makes your lists sparkle**
+            """)
 
     options = st.radio(
         "Select Data Type:",
