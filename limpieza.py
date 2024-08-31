@@ -135,11 +135,14 @@ def download_csv(df):
     return buffer
 
 def main():
-    st.title("BearCare")
-    
-    with st.header():
-        st.image("out-0.png", width=50)  # La ruta de la imagen
-        st.subheader("BearCare")
+    st.set_page_config(page_title="BearCare", page_icon="out-0.png")
+
+    # Usar una combinación de markdown y html para el título con la imagen
+    title_col, image_col = st.columns([0.1, 0.9])
+    with image_col:
+        st.image("out-0.png", width=50)
+    with title_col:
+        st.markdown("# BearCare")
 
     with st.sidebar:
         st.image("https://i.imgur.com/LzPcPIk.png", caption='Allosteric Solutions', width=360)
