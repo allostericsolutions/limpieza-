@@ -136,6 +136,7 @@ def download_csv(df):
 
 def main():
     st.title("Dr. Cleaner")
+    st.image('Captura de pantalla 2024-08-30 223301.png', width=150)  # Agrega la imagen
 
     with st.sidebar:
         st.image("https://i.imgur.com/LzPcPIk.png", caption='Allosteric Solutions', width=360)
@@ -152,21 +153,40 @@ def main():
 
     options = st.radio(
         "Select Data Type:",
-        ('Phone Numbers', 'Emails', 'Postal Codes', 'Bear Trap'))  # Agrega 'Postal Codes'
+        ('Phone Numbers', 'Emails', 'Postal Codes', 'Bear Trap'),
+        columns=4  # Especifica 4 columnas
+    )
 
-    uploaded_files = st.file_uploader("Drop Your Junk Here", type=["csv", "xls", "xlsx", "txt"], accept_multiple_files=True)
-    
-    if uploaded_files:
-        tipo = 'emails' if options == 'Emails' else 'telefonos'
-        if options == 'Postal Codes':
-            tipo = 'codigos_postales'
-        if options == 'Bear Trap':
-            st.write("You've triggered the bear trap! 🪤")
-            st.markdown(
-                f'<iframe src="https://giphy.com/embed/5b0kImM7p9fZzc361N" width="480" height="480" style="" frameBorder="0" class="giphy-embed" allowFullScreen></iframe><p><a href="https://giphy.com/gifs/cartoon-network-emea-crisis-videojuegos-enganchado-5b0kImM7p9fZzc361N">via GIPHY</a></p>',
-                unsafe_allow_html=True
-            )
-        else:
+    st.markdown(
+        """
+        <style>
+        .stRadio > label {
+            font-size: 18px;  /* Ajusta el tamaño de la fuente */
+            font-weight: bold; /* Aplica negrita */
+            padding: 10px;     /* Añade espacio interno */
+            text-align: center; /* Centra el texto */
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # Mostrar el GIF solo cuando se selecciona 'Bear Trap'
+    if options == 'Bear Trap':
+        st.write("You've triggered the bear trap! 🪤")
+        st.markdown(
+            """
+            <iframe src="https://giphy.com/embed/5b0kImM7p9fZzc361N" width="480" height="480" style="" frameBorder="0" class="giphy-embed" allowFullScreen></iframe><p><a href="https://giphy.com/gifs/cartoon-network-emea-crisis-videojuegos-enganchado-5b0kImM7p9fZzc361N">via GIPHY</a></p>
+            """,
+            unsafe_allow_html=True
+        )
+    else:
+        uploaded_files = st.file_uploader("Drop Your Junk Here", type=["csv", "xls", "xlsx", "txt"], accept_multiple_files=True)
+        
+        if uploaded_files:
+            tipo = 'emails' if options == 'Emails' else 'telefonos'
+            if options == 'Postal Codes':
+                tipo = 'codigos_postales'
             output, invalid_items, total_items = procesar_archivos(uploaded_files, tipo)
 
             df = pd.DataFrame({'cleaned_data': list(output)})
