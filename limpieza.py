@@ -153,23 +153,7 @@ def main():
 
     options = st.radio(
         "Select Data Type:",
-        ('Phone Numbers', 'Emails', 'Postal Codes', 'Bear Trap'),
-        columns=4  # Especifica 4 columnas
-    )
-
-    st.markdown(
-        """
-        <style>
-        .stRadio > label {
-            font-size: 18px;  /* Ajusta el tamaño de la fuente */
-            font-weight: bold; /* Aplica negrita */
-            padding: 10px;     /* Añade espacio interno */
-            text-align: center; /* Centra el texto */
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
+        ('Phone Numbers', 'Emails', 'Postal Codes', 'Bear Trap'))  # Agrega 'Postal Codes'
 
     uploaded_files = st.file_uploader("Drop Your Junk Here", type=["csv", "xls", "xlsx", "txt"], accept_multiple_files=True)
     
