@@ -173,7 +173,7 @@ def main():
             st.write("Cleaned Data:")
             st.dataframe(df)
 
-            formato_salida = st.selectbox("Choose Your Fancy Output!", ["CSV", "Excel", "PDF"])
+            formato_salida = st.selectbox("Choose Your Fancy Polished Output Format!", ["CSV", "Excel", "PDF"])
             
             if formato_salida == "CSV":
                 buffer = download_csv(df)
