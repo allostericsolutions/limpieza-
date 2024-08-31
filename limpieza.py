@@ -138,7 +138,7 @@ def main():
     st.title("Dr. Cleaner")
 
     with st.sidebar:
-        st.image("https://i.imgur.com/LzPcPIk.png", caption='Allosteric Solutions', width=360)
+        st.image("out-0.png", caption='Allosteric Solutions', width=360)
         st.markdown("[Visit our website](https://www.allostericsolutions.com)")
         st.markdown("Contact: [franciscocuriel@allostericsolutions.com](mailto:franciscocuriel@allostericsolutions.com)")
 
