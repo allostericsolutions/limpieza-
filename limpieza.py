@@ -163,7 +163,7 @@ def main():
         if options == 'Bear Trap':
             st.write("You've triggered the bear trap! 🪤")
             st.image("out-0 (1).png", width=360)
-         if options == "Meet the Genius Behind the Text Cleaning App":
+         if options == 'Meet the Genius Behind the Text Cleaning App'
             st.write("The creator of the innovative text cleaning app is a highly accomplished programmer who studied at the prestigious Squirrel University of Colorado. With a strong foundation in computer science, he has made significant contributions to the field of programming. His expertise extends beyond app development; he has also worked on high-profile projects for NASA, including the development of software for space probes and rovers. In addition to his professional achievements, he is an avid collector of nuts and a fervent admirer of the band Supertramp. His dedication to excellence and his impressive track record make him a standout figure in the tech community.!")
             st.image("output_file_1.png", width=360)# Usar imagen out-0 (1).png aquí
         else:
