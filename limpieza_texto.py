@@ -3,13 +3,9 @@ import re
 import numpy as np
 
 def limpiar_y_validar(dato):
-    # Elimine todos los caracteres no numéricos
     dato_limpio = re.sub(r'\D', '', dato).strip()
-
-    # Cuente el número total de dígitos en la celda original
     total_digitos = len(dato_limpio)
     
-    # Si hay más de 11 dígitos, considere cada segmento separado por espacios como un número individual
     if total_digitos > 11:
         numeros_separados = re.split(r'\s+', dato)
         resultados_separados = []
@@ -19,7 +15,6 @@ def limpiar_y_validar(dato):
                 resultados_separados.append(numero_limpio)
         return resultados_separados if resultados_separados else None
     else:
-        # Regla general: normalizar el número
         if len(dato_limpio) == 10:
             return [dato_limpio]
         return None
@@ -57,7 +52,7 @@ def limpiar_y_procesar_archivo(uploaded_file, file_extension, chunk_size=10000):
             try:
                 uploaded_file.seek(0)
                 if file_extension == "csv":
-                    reader = pd.read_csv(uploaded_file, chunksize=chunk_size, header=None, encoding=encoding)
+                    reader = pd.read_csv(uploaded_file, chunksize=chunk_size, header=None, encoding=encoding, on_bad_lines='skip')
                 elif file_extension == "txt":
                     reader = (line.decode(encoding).strip() for line in uploaded_file)
                 for chunk_num, chunk in enumerate(reader):
