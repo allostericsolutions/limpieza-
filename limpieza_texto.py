@@ -3,6 +3,7 @@ import re
 import numpy as np
 
 def limpiar_y_validar(dato):
+    # Eliminar todos los caracteres no numéricos
     dato_limpio = re.sub(r'\D', '', dato).strip()
     total_digitos = len(dato_limpio)
     
@@ -15,8 +16,11 @@ def limpiar_y_validar(dato):
                 resultados_separados.append(numero_limpio)
         return resultados_separados if resultados_separados else None
     else:
-        if len(dato_limpio) == 10:
-            return [dato_limpio]
+        # Regla adicional: Eliminar espacios para cifras de 10 dígitos o menos
+        dato_espacios_limpiados = re.sub(r'\s+', '', dato)
+        numero_limpio = re.sub(r'\D', '', dato_espacios_limpiados)
+        if len(numero_limpio) == 10:
+            return [numero_limpio]
         return None
 
 def procesar_chunk(chunk, output, invalid_numbers_less_than_10, invalid_numbers_greater_than_10):
