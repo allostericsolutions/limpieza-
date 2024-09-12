@@ -1,4 +1,3 @@
-
 import pandas as pd
 import re
 import numpy as np
@@ -8,7 +7,8 @@ def limpiar_y_validar(dato):
     dato_limpio = re.sub(r'\D', '', dato).strip()
     total_digitos = len(dato_limpio)
     
-    if total_digitos > 11:
+    if total_digitos > 12:
+        # Dividir en números basándose en espacios en blanco
         numeros_separados = re.split(r'\s+', dato)
         resultados_separados = []
         for num in numeros_separados:
@@ -17,7 +17,7 @@ def limpiar_y_validar(dato):
                 resultados_separados.append(numero_limpio)
         return resultados_separados if resultados_separados else None
     else:
-        # Regla adicional: Eliminar espacios para cifras de 10 dígitos o menos
+        # Eliminar espacios y considerar todo el dato como un solo número
         dato_espacios_limpiados = re.sub(r'\s+', '', dato)
         numero_limpio = re.sub(r'\D', '', dato_espacios_limpiados)
         if len(numero_limpio) == 10:
@@ -27,8 +27,9 @@ def limpiar_y_validar(dato):
 def procesar_chunk(chunk, output, invalid_numbers_less_than_10, invalid_numbers_greater_than_10):
     fondos_planos = chunk.values.flatten().astype(str).tolist()
     for line in fondos_planos:
+        # Limpiar y dividir la línea en fragmentos si tiene más de 12 dígitos
         line_digitos = re.sub(r'\D', '', line)
-        if len(line_digitos) > 11:
+        if len(line_digitos) > 12:
             numbers = re.split(r'\s+', line)
         else:
             numbers = [line]
@@ -95,3 +96,26 @@ def limpiar_y_procesar_archivo(uploaded_file, file_extension, chunk_size=10000):
         "invalid_numbers_less_than_10": invalid_numbers_less_than_10,
         "invalid_numbers_greater_than_10": invalid_numbers_greater_than_10
     }
+```
+
+### Cambios Realizados:
+
+- **Modificar Regla de Validación en `limpiar_y_validar`:**
+  - Si el número tiene más de 12 dígitos, se divide en fragmentos basados en espacios.
+  - Si el número tiene 12 dígitos o menos, se eliminan los espacios y se considera el número completo.
+  
+  ```python
+  if total_digitos > 12:
+      numeros_separados = re.split(r'\s+', dato)
+      resultados_separados = []
+      for num in numeros_separados:
+          numero_limpio = re.sub(r'\D', '', num)
+          if len(numero_limpio) == 10:
+              resultados_separados.append(numero_limpio)
+      return resultados_separados if resultados_separados else None
+  else:
+      dato_espacios_limpiados = re.sub(r'\s+', '', dato)
+      numero_limpio = re.sub(r'\D', '', dato_espacios_limpiados)
+      if len(numero_limpio) == 10:
+          return [numero_limpio]
+      return None
