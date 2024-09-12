@@ -1,4 +1,4 @@
-# limpieza_texto.py
+
 import pandas as pd
 import re
 import numpy as np
@@ -67,7 +67,8 @@ def limpiar_y_procesar_archivo(uploaded_file, file_extension, chunk_size=10000):
                         invalid_numbers_less_than_10, invalid_numbers_greater_than_10 = procesar_chunk(
                             chunk_df, output, invalid_numbers_less_than_10, invalid_numbers_greater_than_10)
                 break
-            except UnicodeDecodeError:
+            except (UnicodeDecodeError, pd.errors.ParserError) as e:
+                # Ignorar errores y continuar con la siguiente codificación
                 continue
 
     elif file_extension in ["xls", "xlsx"]:
